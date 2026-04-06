@@ -1,0 +1,39 @@
+{
+  "name": "Семейный Бюджет",
+  "short_name": "Бюджет",
+  "description": "Учёт семейных расходов и доходов",
+  "start_url": "/budget-pwa/",
+  "display": "standalone",
+  "background_color": "#0d0f12",
+  "theme_color": "#0d0f12",
+  "orientation": "portrait",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Добавить расход",
+      "short_name": "Расход",
+      "url": "/budget-pwa/?tab=add",
+      "description": "Быстро внести расход"
+    },
+    {
+      "name": "Сканировать чек",
+      "short_name": "Чек",
+      "url": "/budget-pwa/?tab=scan",
+      "description": "Сфотографировать чек"
+    }
+  ]
+}
