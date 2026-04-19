@@ -191,6 +191,31 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="ai-label">✨ Распознано AI</div>
       <div class="ai-store" id="aiStore"></div>
     </div>
+    <!-- Категория и оплата перед записью -->
+    <div style="padding:12px 16px;border-bottom:1px solid var(--br);display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div>
+        <label style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;display:block;">Категория</label>
+        <select id="scanCat" style="font-size:13px;padding:9px 10px;height:auto;">
+          <option value="🛒 Продукты">🛒 Продукты</option>
+          <option value="🏠 Жильё">🏠 Жильё</option>
+          <option value="🚗 Транспорт">🚗 Транспорт</option>
+          <option value="🏥 Здоровье">🏥 Здоровье</option>
+          <option value="🎭 Развлечения">🎭 Развлечения</option>
+          <option value="👗 Одежда">👗 Одежда</option>
+          <option value="🍽 Рестораны">🍽 Рестораны</option>
+          <option value="Другое">Другое</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;display:block;">Оплата</label>
+        <select id="scanPay" style="font-size:13px;padding:9px 10px;height:auto;">
+          <option>Карта</option>
+          <option>Наличные</option>
+          <option>PayPal</option>
+          <option>Apple Pay</option>
+        </select>
+      </div>
+    </div>
     <div id="itemsList"></div>
     <div class="ai-total">
       <div class="ai-total-lbl">Итого по чеку</div>
@@ -435,7 +460,9 @@ async function saveReceipt(){
   btn.textContent='⏳ Пишу '+rows.length+' товаров...';
   var r1=await post({sheetType:'items',rows:rows});
   btn.textContent='⏳ Пишу транзакцию...';
-  var r2=await post({sheetType:'transactions',row:[txDate,'🛒 Продукты','Супермаркет','Чек: '+store+' ('+result.items.length+' тов.)',total,'Расход',store,'Карта',todayStr()]});
+  var scanCat = document.getElementById('scanCat') ? document.getElementById('scanCat').value : '🛒 Продукты';
+  var scanPay = document.getElementById('scanPay') ? document.getElementById('scanPay').value : 'Карта';
+  var r2=await post({sheetType:'transactions',row:[txDate,scanCat,'Супермаркет','Чек: '+store+' ('+result.items.length+' тов.)',total,'Расход',store,scanPay,todayStr()]});
   btn.disabled=false;btn.textContent='Записать в таблицу →';
   if(r1.success&&r2.success){toast('✅ '+rows.length+' товаров + транзакция €'+total.toFixed(2),'ok');state.receipt=null;setTimeout(resetScan,1500);}
   else if(!r1.success&&!r2.success){showErr(true,'❌ Ошибка записи','Товары: '+(r1.error||'нет ответа')+'\nТранзакция: '+(r2.error||'нет ответа')+'\nОткрой ⚙️ → "Проверить подключение"');}
