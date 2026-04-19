@@ -632,6 +632,65 @@ function resetScan(){
   state.receipt=null;
 }
 
+async function saveReceipt(){
+  var result=state.receipt;
+  if(!result||!result.items||!result.items.length){
+    toast('❌ Нет данных чека','er'); return;
+  }
+  var url=getUrl();
+  if(!url){
+    showErr(true,'❌ Нет URL Apps Script',
+      'Открой ⚙️ Настройки → введи URL Apps Script → Сохранить');
+    return;
+  }
+
+  var btn=document.getElementById('scanBtn');
+  btn.disabled=true; btn.textContent='⏳ Записываю...';
+
+  var store  =document.getElementById('scanStore').value||result.store||'';
+  var txDate =document.getElementById('scanDate').value||today();
+  var addDate=today();
+  var total  =result.total||(result.items.reduce(function(s,i){return s+(i._t||0);},0));
+
+  // Товары: Дата | Магазин | Товар | Категория | Кол-во | Цена | Сумма
+  var rows=result.items.map(function(item){
+    return [txDate, store, item.name||'', item.category||'Другое',
+            item.qty||1, item.price||0, item._t||0];
+  });
+
+  btn.textContent='⏳ Пишу '+rows.length+' товаров...';
+  var r1=await post({sheetType:'items', rows:rows});
+
+  btn.textContent='⏳ Пишу транзакцию...';
+  var r2=await post({sheetType:'transactions', row:[
+    txDate,'🛒 Продукты','Супермаркет',
+    'Чек: '+store+' ('+result.items.length+' тов.)',
+    total,'Расход',store,'Карта',addDate
+  ]});
+
+  btn.disabled=false; btn.textContent='Записать в таблицу →';
+
+  if(r1.success&&r2.success){
+    toast('✅ '+rows.length+' товаров + транзакция €'+total.toFixed(2),'ok');
+    state.receipt=null;
+    setTimeout(resetScan,1500);
+  } else if(!r1.success&&!r2.success){
+    showErr(true,'❌ Ошибка записи',
+      'Товары: '+(r1.error||'нет ответа')+'
+'
+     +'Транзакция: '+(r2.error||'нет ответа')+'
+'
+     +'→ Открой ⚙️ и нажми "Проверить подключение"');
+  } else if(!r1.success){
+    toast('⚠️ Транзакция ок, товары: '+(r1.error||'ошибка'),'er');
+    state.receipt=null; setTimeout(resetScan,2000);
+  } else {
+    toast('⚠️ Товары ок, транзакция: '+(r2.error||'ошибка'),'er');
+    state.receipt=null; setTimeout(resetScan,2000);
+  }
+}
+
+
 // ── HISTORY ──
 async function loadHist(){
   var url=getUrl();
