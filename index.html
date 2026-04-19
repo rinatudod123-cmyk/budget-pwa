@@ -549,33 +549,15 @@ async function scan(dataUrl){
 }
 
 function showReceipt(result){
-  // Группируем по категориям
-  var groups={};
-  (result.items||[]).forEach(function(item){
-    var cat=item.category||'Другое';
-    if(!groups[cat])groups[cat]={items:[],total:0};
+  // Вычисляем суммы
+  (result.items||[]).forEach(function(item,idx){
     item._t=item.total||((item.qty||1)*(item.price||0));
-    groups[cat].items.push(item);
-    groups[cat].total+=item._t;
+    item._idx=idx;
+    if(!item.category)item.category='Другое';
   });
 
-  var html='';
-  FOOD_ORDER.forEach(function(cat){
-    if(!groups[cat])return;
-    var g=groups[cat];
-    html+='<div class="cat-group">';
-    html+='<div class="cat-hdr"><span class="cat-icon">'+(FOOD_ICON[cat]||'❓')+'</span>';
-    html+='<span class="cat-name">'+cat+'</span>';
-    html+='<span class="cat-sum">€'+g.total.toFixed(2)+'</span></div>';
-    g.items.forEach(function(item){
-      html+='<div class="prod-row"><span class="prod-name">'+item.name+'</span>';
-      if(item.qty>1)html+='<span class="prod-qty">×'+item.qty+'</span>';
-      html+='<span class="prod-price">€'+item._t.toFixed(2)+'</span></div>';
-    });
-    html+='</div>';
-  });
+  renderItems();
 
-  document.getElementById('catGroups').innerHTML=html;
   var total=result.total||(result.items.reduce(function(s,i){return s+(i._t||0);},0));
   document.getElementById('aiTotal').textContent='€'+total.toFixed(2);
   document.getElementById('aiStore').textContent=result.store||'';
@@ -583,53 +565,49 @@ function showReceipt(result){
   document.getElementById('scanBtn').style.display='block';
 }
 
-async function saveReceipt(){
+function renderItems(){
   var result=state.receipt;
-  if(!result){toast('❌ Нет данных','er');return;}
+  if(!result)return;
 
-  var btn=document.getElementById('scanBtn');
-  btn.disabled=true;btn.textContent='Записываю...';
-
-  var store  =document.getElementById('scanStore').value||result.store||'';
-  var txDate =document.getElementById('scanDate').value||today();
-  var addDate=today();
-  var txCat  =document.getElementById('txCatSelect').value||'🛒 Продукты';
-  var total  =result.total||(result.items.reduce(function(s,i){return s+(i._t||0);},0));
-
-  // ── 1. ТОВАРЫ → лист Товары (найти по типу "items") ──
-  // Колонки: Дата | Магазин | Товар | Категория | Кол-во | Цена | Сумма
-  var rows=result.items.map(function(item){
-    return [txDate,store,item.name,item.category||'Другое',
-            item.qty||1, item.price||0, item._t||0];
+  // Сортируем по категории
+  var sorted=result.items.slice().sort(function(a,b){
+    var ia=FOOD_ORDER.indexOf(a.category);
+    var ib=FOOD_ORDER.indexOf(b.category);
+    if(ia<0)ia=99;if(ib<0)ib=99;
+    return ia-ib;
   });
 
-  console.log('Sending items:', rows.length, 'rows to items sheet');
-  var r1=await post({sheetType:'items', rows:rows});
-  console.log('Items result:', r1);
+  var catOpts=FOOD_ORDER.map(function(c){
+    return '<option value="'+c+'">'+( FOOD_ICON[c]||'❓')+' '+c+'</option>';
+  }).join('');
 
-  // ── 2. ТРАНЗАКЦИЯ → Транзакции ──
-  // Дата | Категория | Подкатегория | Описание | Сумма | Тип | Магазин | Оплата | Добавлено
-  var r2=await post({sheetType:'transactions', row:[
-    txDate, txCat, 'Супермаркет',
-    'Чек: '+store+' ('+result.items.length+' товаров)',
-    total, 'Расход', store, 'Карта', addDate
-  ]});
-  console.log('Transaction result:', r2);
+  var html='';
+  sorted.forEach(function(item){
+    var isUnknown=item.category==='Другое'||!item.category;
+    var rowBg=isUnknown?'background:rgba(255,171,64,.06);border-left:2px solid rgba(255,171,64,.4);':'';
+    html+='<div class="prod-row-edit" style="'+rowBg+'padding:10px 14px;border-top:1px solid rgba(42,48,64,.4);">';
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
+    html+='<span style="font-size:13px;font-weight:600;flex:1;">'+item.name+'</span>';
+    if(item.qty>1)html+='<span style="font-size:11px;color:var(--tx2);margin:0 8px;">×'+item.qty+'</span>';
+    html+='<span style="font-size:13px;font-weight:700;color:var(--ac);">€'+item._t.toFixed(2)+'</span>';
+    html+='</div>';
+    html+='<select onchange="changeCat('+item._idx+',this.value)" style="font-size:12px;padding:6px 10px;height:auto;border-color:'+(isUnknown?'rgba(255,171,64,.5)':'var(--br)')+';">';
+    html+=catOpts.replace('value="'+item.category+'"','value="'+item.category+'" selected');
+    html+='</select>';
+    html+='</div>';
+  });
 
-  if(r1.success&&r2.success){
-    toast('✅ '+result.items.length+' товаров в "'+r1.sheet+'" + транзакция!','ok');
-  } else if(r2.success&&!r1.success){
-    toast('⚠️ Транзакция ок. Товары: '+(r1.error||'ошибка'),'er');
-  } else if(r1.success&&!r2.success){
-    toast('⚠️ Товары ок. Транзакция: '+(r2.error||'ошибка'),'er');
-  } else {
-    toast('❌ Проверь URL в настройках ⚙️','er');
-  }
-
-  state.receipt=null;
-  resetScan();
-  btn.disabled=false;btn.textContent='Записать в таблицу →';
+  document.getElementById('catGroups').innerHTML=html;
 }
+
+function changeCat(idx,newCat){
+  if(state.receipt&&state.receipt.items[idx]){
+    state.receipt.items[idx].category=newCat;
+    // Перерисовать без сброса позиции
+    renderItems();
+  }
+}
+
 
 function resetScan(){
   document.getElementById('scanZone').style.display='block';
