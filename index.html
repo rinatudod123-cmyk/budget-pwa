@@ -24,15 +24,16 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <style>
+button{background:none;border:none;font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;}
 :root{--bg:#0d0f12;--s:#161a20;--s2:#1e232c;--br:#2a3040;--ac:#00e676;--ac2:#00b8d4;--red:#ff5252;--tx:#eef0f4;--tx2:#7c8898;--tx3:#4a5568;--r:16px;--rs:10px;}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;max-width:480px;margin:0 auto;padding-bottom:90px;}
 .hdr{padding:18px 20px 0;display:flex;align-items:center;justify-content:space-between;}
 .hdr-title{font-size:22px;font-weight:800;}
 .hdr-title span{color:var(--ac);}
-.icon-btn{width:40px;height:40px;background:var(--s2);border:1px solid var(--br);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;}
+.icon-btn{width:40px;height:40px;background:var(--s2);border:1px solid var(--br);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;font-family:inherit;}
 .tabs{display:flex;margin:14px 20px 0;background:var(--s);border-radius:var(--r);padding:4px;border:1px solid var(--br);}
-.tab{flex:1;padding:9px 4px;text-align:center;font-size:10px;font-weight:700;color:var(--tx2);cursor:pointer;border-radius:12px;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:3px;text-transform:uppercase;}
+.tab{flex:1;padding:9px 4px;text-align:center;font-size:10px;font-weight:700;color:var(--tx2);cursor:pointer;border-radius:12px;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:3px;text-transform:uppercase;background:none;border:none;}
 .tab .ti{font-size:17px;}
 .tab.active{background:var(--s2);color:var(--ac);border:1px solid var(--br);}
 .panel{display:none;padding:14px 20px;}
@@ -49,7 +50,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .amt-sym{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:22px;font-weight:800;color:var(--ac);}
 .amt-wrap input{padding-left:38px;font-size:26px;font-weight:800;height:66px;border-color:var(--ac);}
 .type-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;}
-.ttype{padding:10px 4px;border:1px solid var(--br);border-radius:var(--rs);background:var(--s2);color:var(--tx2);font-size:12px;font-weight:700;text-align:center;cursor:pointer;transition:all .2s;}
+.ttype{padding:10px 4px;border:1px solid var(--br);border-radius:var(--rs);background:var(--s2);color:var(--tx2);font-size:12px;font-weight:700;text-align:center;cursor:pointer;transition:all .2s;font-family:inherit;}
 .ttype.ae{border-color:var(--red);color:var(--red);background:rgba(255,82,82,.1);}
 .ttype.ai{border-color:var(--ac);color:var(--ac);background:rgba(0,230,118,.1);}
 .ttype.at{border-color:var(--ac2);color:var(--ac2);background:rgba(0,184,212,.1);}
@@ -58,7 +59,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .btn-p:active{opacity:.85;}
 .btn-p:disabled{background:var(--tx3);color:var(--tx2);cursor:not-allowed;}
 .btn-s{background:var(--s2);color:var(--tx);border:1px solid var(--br);margin-top:8px;}
-.scan-zone{border:2px dashed var(--br);border-radius:var(--r);padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s;}
+.scan-zone{border:2px dashed var(--br);border-radius:var(--r);padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s;width:100%;background:none;font-family:inherit;}
 .scan-zone:active{border-color:var(--ac);}
 #fileInput{display:none;}
 .prev-img{width:100%;border-radius:var(--rs);margin-bottom:12px;display:none;max-height:200px;object-fit:cover;}
@@ -114,21 +115,21 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
 <div class="hdr">
   <div class="hdr-title">💰 <span>Бюджет</span></div>
-  <div class="icon-btn" onclick="openSett()">⚙️</div>
+  <button class="icon-btn" onclick="openSett()">⚙️</button>
 </div>
 
 <div class="tabs">
-  <div class="tab active" onclick="goTab('add',this)"><span class="ti">➕</span>Внести</div>
-  <div class="tab" onclick="goTab('scan',this)"><span class="ti">📷</span>Чек</div>
-  <div class="tab" onclick="goTab('hist',this)"><span class="ti">📋</span>История</div>
+  <button class="tab active" onclick="goTab('add',this)"><span class="ti">➕</span>Внести</button>
+  <button class="tab" onclick="goTab('scan',this)"><span class="ti">📷</span>Чек</button>
+  <button class="tab" onclick="goTab('hist',this)"><span class="ti">📋</span>История</button>
 </div>
 
 <!-- ВНЕСТИ -->
 <div class="panel active" id="panel-add">
   <div class="type-row">
-    <div class="ttype ae" onclick="setType('Расход',this)">💸 Расход</div>
-    <div class="ttype" onclick="setType('Доход',this)">💰 Доход</div>
-    <div class="ttype" onclick="setType('Перевод',this)">↔️ Перевод</div>
+    <button class="ttype ae" onclick="setType('Расход',this)">💸 Расход</button>
+    <button class="ttype" onclick="setType('Доход',this)">💰 Доход</button>
+    <button class="ttype" onclick="setType('Перевод',this)">↔️ Перевод</button>
   </div>
   <div class="fg">
     <div class="amt-wrap">
@@ -179,11 +180,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   <div class="card">
     <div class="ctitle">Фото чека</div>
     <img id="prevImg" class="prev-img" alt="">
-    <div class="scan-zone" id="scanZone" onclick="document.getElementById('fileInput').click()">
+    <button class="scan-zone" id="scanZone" onclick="document.getElementById('fileInput').click()" type="button">
       <div style="font-size:44px;margin-bottom:10px">📸</div>
       <div style="font-size:15px;font-weight:700;margin-bottom:5px">Сфотографировать чек</div>
       <div style="font-size:12px;color:var(--tx2)">Нажми чтобы снять или выбрать из галереи</div>
-    </div>
+    </button>
     <input type="file" id="fileInput" accept="image/*" capture="environment" onchange="handlePhoto(this)">
     <div style="margin-top:12px">
       <div class="frow">
