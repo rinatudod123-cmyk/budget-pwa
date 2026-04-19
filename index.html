@@ -11,481 +11,284 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Бюджет">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="apple-touch-startup-image" href="icon-512.png">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: #0d0f12;
-  --surface: #161a20;
-  --surface2: #1e232c;
-  --border: #2a3040;
-  --accent: #00e676;
-  --accent2: #00b8d4;
-  --danger: #ff5252;
-  --warn: #ffab40;
-  --text: #eef0f4;
-  --text2: #7c8898;
-  --text3: #4a5568;
-  --radius: 16px;
-  --radius-sm: 10px;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-body {
-  font-family: 'Manrope', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  max-width: 480px;
-  margin: 0 auto;
-  padding-bottom: 80px;
-}
-.header {
-  padding: 20px 20px 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.header-title { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
-.header-title span { color: var(--accent); }
-.settings-btn {
-  width: 40px; height: 40px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; font-size: 18px;
-  transition: background 0.2s;
-}
-.tabs {
-  display: flex;
-  margin: 20px 20px 0;
-  background: var(--surface);
-  border-radius: var(--radius);
-  padding: 4px;
-  border: 1px solid var(--border);
-}
-.tab {
-  flex: 1; padding: 10px 6px;
-  text-align: center; font-size: 12px; font-weight: 600;
-  color: var(--text2); cursor: pointer;
-  border-radius: 12px; transition: all 0.2s;
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-}
-.tab .tab-icon { font-size: 18px; }
-.tab.active { background: var(--surface2); color: var(--accent); border: 1px solid var(--border); }
-.panel { display: none; padding: 16px 20px; }
-.panel.active { display: block; }
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 18px; margin-bottom: 14px;
-}
-.card-title {
-  font-size: 11px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 1px;
-  color: var(--text2); margin-bottom: 14px;
-}
-label {
-  display: block; font-size: 12px; font-weight: 600;
-  color: var(--text2); margin-bottom: 6px;
-  text-transform: uppercase; letter-spacing: 0.5px;
-}
-input, select, textarea {
-  width: 100%;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text);
-  font-family: 'Manrope', sans-serif;
-  font-size: 15px; font-weight: 500;
-  padding: 13px 14px; outline: none;
-  transition: border-color 0.2s;
-  appearance: none; -webkit-appearance: none;
-}
-input:focus, select:focus, textarea:focus { border-color: var(--accent); }
-select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237c8898' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 14px center;
-  padding-right: 38px;
-}
-textarea { resize: none; min-height: 70px; }
-.form-group { margin-bottom: 14px; }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.amount-wrap { position: relative; }
-.amount-wrap .currency {
-  position: absolute; left: 14px; top: 50%;
-  transform: translateY(-50%);
-  font-size: 20px; font-weight: 700; color: var(--accent);
-}
-.amount-wrap input {
-  padding-left: 36px; font-size: 28px; font-weight: 800;
-  height: 70px; border-color: var(--accent); letter-spacing: -0.5px;
-}
-.type-toggle {
-  display: grid; grid-template-columns: 1fr 1fr 1fr;
-  gap: 8px; margin-bottom: 14px;
-}
-.type-btn {
-  padding: 10px 6px; border: 1px solid var(--border);
-  border-radius: var(--radius-sm); background: var(--surface2);
-  color: var(--text2); font-size: 13px; font-weight: 600;
-  text-align: center; cursor: pointer; transition: all 0.2s;
-}
-.type-btn.active-expense { border-color: var(--danger); color: var(--danger); background: rgba(255,82,82,0.1); }
-.type-btn.active-income  { border-color: var(--accent); color: var(--accent); background: rgba(0,230,118,0.1); }
-.type-btn.active-transfer{ border-color: var(--accent2); color: var(--accent2); background: rgba(0,184,212,0.1); }
-.btn-submit {
-  width: 100%; padding: 18px;
-  background: var(--accent); color: #000;
-  border: none; border-radius: var(--radius);
-  font-size: 16px; font-weight: 800;
-  font-family: 'Manrope', sans-serif;
-  cursor: pointer; transition: all 0.2s; letter-spacing: 0.3px;
-}
-.btn-submit:hover { background: #00ff88; transform: translateY(-1px); }
-.btn-submit:active { transform: translateY(0); }
-.btn-submit:disabled { background: var(--text3); color: var(--text2); cursor: not-allowed; transform: none; }
-.btn-secondary {
-  width: 100%; padding: 16px;
-  background: var(--surface2); color: var(--text);
-  border: 1px solid var(--border); border-radius: var(--radius);
-  font-size: 15px; font-weight: 700;
-  font-family: 'Manrope', sans-serif;
-  cursor: pointer; transition: all 0.2s;
-}
-.scan-zone {
-  border: 2px dashed var(--border); border-radius: var(--radius);
-  padding: 36px 20px; text-align: center; cursor: pointer;
-  transition: border-color 0.2s;
-}
-.scan-zone:hover { border-color: var(--accent); }
-.scan-zone .scan-icon { font-size: 48px; margin-bottom: 12px; }
-.scan-zone .scan-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
-.scan-zone .scan-sub { font-size: 13px; color: var(--text2); }
-#fileInput { display: none; }
-.preview-img {
-  width: 100%; border-radius: var(--radius-sm);
-  margin-bottom: 14px; display: none;
-  max-height: 260px; object-fit: cover;
-}
-.ai-result {
-  display: none;
-  background: var(--surface2);
-  border: 1px solid var(--accent);
-  border-radius: var(--radius);
-  padding: 16px; margin-bottom: 14px;
-}
-.ai-result-title {
-  font-size: 11px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 1px;
-  color: var(--accent); margin-bottom: 12px;
-}
-.product-item {
-  display: flex; justify-content: space-between;
-  align-items: center; padding: 10px 0;
-  border-bottom: 1px solid var(--border); font-size: 14px;
-}
-.product-item:last-child { border-bottom: none; }
-.product-name { font-weight: 600; flex: 1; }
-.product-cat { font-size: 11px; color: var(--text2); margin-top: 2px; }
-.product-price { font-weight: 700; color: var(--accent); white-space: nowrap; margin-left: 10px; }
-.ai-total {
-  display: flex; justify-content: space-between;
-  font-size: 16px; font-weight: 800;
-  padding-top: 12px; margin-top: 4px;
-  border-top: 1px solid var(--border);
-}
-.ai-total span:last-child { color: var(--accent); }
-.processing { display: none; text-align: center; padding: 24px; }
-.spinner {
-  width: 36px; height: 36px;
-  border: 3px solid var(--border);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin: 0 auto 12px;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.processing-text { font-size: 14px; color: var(--text2); font-weight: 500; }
-.history-item {
-  display: flex; align-items: center;
-  gap: 14px; padding: 14px 0;
-  border-bottom: 1px solid var(--border);
-}
-.history-item:last-child { border-bottom: none; }
-.history-icon {
-  width: 42px; height: 42px; border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px; flex-shrink: 0;
-}
-.history-info { flex: 1; min-width: 0; }
-.history-cat { font-size: 14px; font-weight: 700; }
-.history-sub { font-size: 12px; color: var(--text2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.history-right { text-align: right; flex-shrink: 0; }
-.history-amount { font-size: 16px; font-weight: 800; }
-.history-amount.expense { color: var(--danger); }
-.history-amount.income  { color: var(--accent); }
-.history-date { font-size: 11px; color: var(--text2); margin-top: 2px; }
-.settings-overlay {
-  display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,0.85); z-index: 100; align-items: flex-end;
-}
-.settings-overlay.open { display: flex; }
-.settings-panel {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 24px 24px 0 0; padding: 24px 20px 44px;
-  width: 100%; max-width: 480px; margin: 0 auto;
-  max-height: 90vh; overflow-y: auto;
-}
-.settings-handle {
-  width: 40px; height: 4px; background: var(--border);
-  border-radius: 2px; margin: 0 auto 20px;
-}
-.settings-title { font-size: 18px; font-weight: 800; margin-bottom: 20px; }
-.settings-hint { font-size: 11px; color: var(--text3); margin-top: 5px; line-height: 1.5; }
-.settings-hint a { color: var(--accent2); }
-.status-dot {
-  display: inline-block; width: 8px; height: 8px;
-  border-radius: 50%; margin-right: 6px;
-}
-.status-dot.ok  { background: var(--accent); }
-.status-dot.bad { background: var(--danger); }
-.status-row {
-  display: flex; align-items: center;
-  font-size: 13px; color: var(--text2);
-  margin-bottom: 8px;
-}
-.toast {
-  position: fixed; bottom: 100px; left: 50%;
-  transform: translateX(-50%) translateY(20px);
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 100px; padding: 12px 22px;
-  font-size: 14px; font-weight: 600;
-  opacity: 0; transition: all 0.3s;
-  pointer-events: none; white-space: nowrap; z-index: 200;
-}
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.toast.success { border-color: var(--accent); color: var(--accent); }
-.toast.error   { border-color: var(--danger); color: var(--danger); }
-.month-cards {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 10px; margin-bottom: 14px;
-}
-.month-card {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 14px;
-}
-.month-card-label { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; }
-.month-card-value { font-size: 22px; font-weight: 800; margin-top: 4px; letter-spacing: -0.5px; }
-.month-card-value.green { color: var(--accent); }
-.month-card-value.red   { color: var(--danger); }
-.url-display {
-  background: var(--surface2); border: 1px solid var(--accent);
-  border-radius: var(--radius-sm); padding: 10px 14px;
-  font-size: 11px; color: var(--accent2);
-  word-break: break-all; line-height: 1.5;
-  margin-bottom: 6px;
-}
+:root{--bg:#0d0f12;--s:#161a20;--s2:#1e232c;--br:#2a3040;--ac:#00e676;--ac2:#00b8d4;--red:#ff5252;--yl:#ffab40;--tx:#eef0f4;--tx2:#7c8898;--tx3:#4a5568;--r:16px;--rs:10px;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;max-width:480px;margin:0 auto;padding-bottom:90px;}
+.hdr{padding:20px 20px 0;display:flex;align-items:center;justify-content:space-between;}
+.hdr-title{font-size:22px;font-weight:800;letter-spacing:-.5px;}
+.hdr-title span{color:var(--ac);}
+.icon-btn{width:40px;height:40px;background:var(--s2);border:1px solid var(--br);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;}
+.tabs{display:flex;margin:16px 20px 0;background:var(--s);border-radius:var(--r);padding:4px;border:1px solid var(--br);}
+.tab{flex:1;padding:10px 4px;text-align:center;font-size:11px;font-weight:700;color:var(--tx2);cursor:pointer;border-radius:12px;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:3px;letter-spacing:.3px;text-transform:uppercase;}
+.tab .ti{font-size:18px;}
+.tab.active{background:var(--s2);color:var(--ac);border:1px solid var(--br);}
+.panel{display:none;padding:14px 20px;}
+.panel.active{display:block;}
+.card{background:var(--s);border:1px solid var(--br);border-radius:var(--r);padding:16px;margin-bottom:12px;}
+.ctitle{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--tx2);margin-bottom:12px;}
+label{display:block;font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;}
+input,select,textarea{width:100%;background:var(--s2);border:1px solid var(--br);border-radius:var(--rs);color:var(--tx);font-family:'Manrope',sans-serif;font-size:15px;font-weight:500;padding:12px 14px;outline:none;transition:border-color .2s;appearance:none;-webkit-appearance:none;}
+input:focus,select:focus{border-color:var(--ac);}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237c8898' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;}
+.fg{margin-bottom:12px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.amt-wrap{position:relative;}
+.amt-sym{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:22px;font-weight:800;color:var(--ac);}
+.amt-wrap input{padding-left:38px;font-size:26px;font-weight:800;height:66px;border-color:var(--ac);letter-spacing:-.5px;}
+.type-toggle{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;}
+.ttype{padding:10px 4px;border:1px solid var(--br);border-radius:var(--rs);background:var(--s2);color:var(--tx2);font-size:12px;font-weight:700;text-align:center;cursor:pointer;transition:all .2s;}
+.ttype.ae{border-color:var(--red);color:var(--red);background:rgba(255,82,82,.1);}
+.ttype.ai{border-color:var(--ac);color:var(--ac);background:rgba(0,230,118,.1);}
+.ttype.at{border-color:var(--ac2);color:var(--ac2);background:rgba(0,184,212,.1);}
+.btn{width:100%;padding:16px;border:none;border-radius:var(--r);font-size:15px;font-weight:800;font-family:'Manrope',sans-serif;cursor:pointer;transition:all .2s;}
+.btn-p{background:var(--ac);color:#000;}
+.btn-p:hover{background:#00ff88;}
+.btn-p:disabled{background:var(--tx3);color:var(--tx2);cursor:not-allowed;}
+.btn-s{background:var(--s2);color:var(--tx);border:1px solid var(--br);margin-top:8px;}
+/* Scanner */
+.scan-zone{border:2px dashed var(--br);border-radius:var(--r);padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s;}
+.scan-zone:hover{border-color:var(--ac);}
+.scan-zone .si{font-size:44px;margin-bottom:10px;}
+.scan-zone .st{font-size:15px;font-weight:700;margin-bottom:5px;}
+.scan-zone .ss{font-size:12px;color:var(--tx2);}
+#fileInput{display:none;}
+.prev-img{width:100%;border-radius:var(--rs);margin-bottom:12px;display:none;max-height:240px;object-fit:cover;}
+/* Processing */
+.proc{display:none;text-align:center;padding:24px;}
+.spin{width:36px;height:36px;border:3px solid var(--br);border-top-color:var(--ac);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.proc-txt{font-size:13px;color:var(--tx2);font-weight:500;}
+.proc-step{font-size:11px;color:var(--tx3);margin-top:6px;}
+/* AI Result */
+.ai-box{display:none;border:1px solid var(--ac);border-radius:var(--r);margin-bottom:12px;overflow:hidden;}
+.ai-hdr{background:rgba(0,230,118,.08);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;}
+.ai-hdr-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ac);}
+.ai-hdr-store{font-size:13px;font-weight:600;color:var(--tx2);}
+/* Category groups */
+.cat-group{border-bottom:1px solid var(--br);}
+.cat-group:last-child{border-bottom:none;}
+.cat-header{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--s2);}
+.cat-header-icon{font-size:18px;}
+.cat-header-name{font-size:12px;font-weight:700;flex:1;color:var(--tx);}
+.cat-header-sum{font-size:13px;font-weight:800;color:var(--ac);}
+.cat-items{}
+.prod-item{display:flex;justify-content:space-between;align-items:center;padding:9px 16px 9px 40px;border-top:1px solid rgba(42,48,64,.5);}
+.prod-name{font-size:13px;font-weight:500;flex:1;color:var(--tx);}
+.prod-qty{font-size:11px;color:var(--tx2);margin-right:8px;}
+.prod-price{font-size:13px;font-weight:700;color:var(--ac);}
+.ai-total{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(0,230,118,.06);border-top:1px solid var(--br);}
+.ai-total-label{font-size:13px;font-weight:700;color:var(--tx2);}
+.ai-total-val{font-size:20px;font-weight:800;color:var(--ac);}
+/* History */
+.hist-item{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-bottom:1px solid var(--br);}
+.hist-item:last-child{border-bottom:none;}
+.hist-icon{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;margin-top:2px;}
+.hist-info{flex:1;min-width:0;}
+.hist-cat{font-size:14px;font-weight:700;}
+.hist-sub{font-size:12px;color:var(--tx2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hist-dates{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;}
+.hist-date-tag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:100px;display:flex;align-items:center;gap:3px;}
+.dt-tx{background:rgba(0,184,212,.12);color:var(--ac2);}
+.dt-fill{background:rgba(124,136,152,.1);color:var(--tx3);}
+.hist-right{text-align:right;flex-shrink:0;}
+.hist-amt{font-size:15px;font-weight:800;}
+.hist-amt.exp{color:var(--red);}
+.hist-amt.inc{color:var(--ac);}
+/* Summary */
+.sum-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.sum-card{background:var(--s);border:1px solid var(--br);border-radius:var(--r);padding:14px;}
+.sum-lbl{font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;}
+.sum-val{font-size:20px;font-weight:800;margin-top:4px;letter-spacing:-.5px;}
+.sum-val.g{color:var(--ac);}
+.sum-val.r{color:var(--red);}
+/* Settings */
+.sett-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:100;align-items:flex-end;}
+.sett-ov.open{display:flex;}
+.sett-panel{background:var(--s);border:1px solid var(--br);border-radius:24px 24px 0 0;padding:20px 20px 44px;width:100%;max-width:480px;margin:0 auto;max-height:88vh;overflow-y:auto;}
+.sett-handle{width:40px;height:4px;background:var(--br);border-radius:2px;margin:0 auto 18px;}
+.sett-title{font-size:18px;font-weight:800;margin-bottom:18px;}
+.hint{font-size:11px;color:var(--tx3);margin-top:4px;line-height:1.5;}
+.hint a{color:var(--ac2);}
+.status-row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tx2);margin-bottom:6px;}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.dot.ok{background:var(--ac);}
+.dot.no{background:var(--red);}
+/* Error box */
+.err-box{background:rgba(255,82,82,.08);border:1px solid rgba(255,82,82,.3);border-radius:var(--rs);padding:12px 14px;margin-bottom:12px;display:none;}
+.err-box-title{font-size:13px;font-weight:700;color:var(--red);margin-bottom:4px;}
+.err-box-txt{font-size:12px;color:var(--tx2);line-height:1.5;}
+/* Toast */
+.toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--s2);border:1px solid var(--br);border-radius:100px;padding:11px 20px;font-size:13px;font-weight:700;opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;z-index:200;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{border-color:var(--ac);color:var(--ac);}
+.toast.er{border-color:var(--red);color:var(--red);}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="header-title">💰 <span>Бюджет</span></div>
-  <div class="settings-btn" onclick="openSettings()">⚙️</div>
+<div class="hdr">
+  <div class="hdr-title">💰 <span>Бюджет</span></div>
+  <div class="icon-btn" onclick="openSettings()">⚙️</div>
 </div>
 
 <div class="tabs">
-  <div class="tab active" onclick="switchTab('add',this)">
-    <span class="tab-icon">➕</span>Внести
-  </div>
-  <div class="tab" onclick="switchTab('scan',this)">
-    <span class="tab-icon">📷</span>Чек
-  </div>
-  <div class="tab" onclick="switchTab('history',this)">
-    <span class="tab-icon">📋</span>История
-  </div>
+  <div class="tab active" onclick="goTab('add',this)"><span class="ti">➕</span>Внести</div>
+  <div class="tab" onclick="goTab('scan',this)"><span class="ti">📷</span>Чек</div>
+  <div class="tab" onclick="goTab('hist',this)"><span class="ti">📋</span>История</div>
 </div>
 
-<!-- ══ ДОБАВИТЬ ══ -->
+<!-- ═══ ВНЕСТИ ═══ -->
 <div class="panel active" id="panel-add">
   <div class="type-toggle">
-    <div class="type-btn active-expense" onclick="setType('Расход',this)">💸 Расход</div>
-    <div class="type-btn" onclick="setType('Доход',this)">💰 Доход</div>
-    <div class="type-btn" onclick="setType('Перевод',this)">↔️ Перевод</div>
+    <div class="ttype ae" onclick="setType('Расход',this)">💸 Расход</div>
+    <div class="ttype" onclick="setType('Доход',this)">💰 Доход</div>
+    <div class="ttype" onclick="setType('Перевод',this)">↔️ Перевод</div>
   </div>
 
-  <div class="form-group">
-    <div class="amount-wrap">
-      <span class="currency">€</span>
+  <div class="fg">
+    <div class="amt-wrap">
+      <span class="amt-sym">€</span>
       <input type="number" id="amount" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
     </div>
   </div>
 
   <div class="card">
-    <div class="card-title">Детали транзакции</div>
-
-    <div class="form-group">
+    <div class="ctitle">Детали</div>
+    <div class="fg">
       <label>Категория</label>
-      <select id="category" onchange="updateSubcategories()">
+      <select id="category" onchange="updateSub()">
         <option value="">— выбери —</option>
-        <option>🛒 Продукты</option>
-        <option>🏠 Жильё</option>
-        <option>🚗 Транспорт</option>
-        <option>🏥 Здоровье</option>
-        <option>🎭 Развлечения</option>
-        <option>👗 Одежда</option>
-        <option>📱 Связь</option>
-        <option>📚 Образование</option>
-        <option>🍽 Рестораны</option>
-        <option>💼 Зарплата</option>
-        <option>📈 Инвестиции</option>
-        <option>Другое</option>
+        <option>🛒 Продукты</option><option>🏠 Жильё</option><option>🚗 Транспорт</option>
+        <option>🏥 Здоровье</option><option>🎭 Развлечения</option><option>👗 Одежда</option>
+        <option>📱 Связь</option><option>📚 Образование</option><option>🍽 Рестораны</option>
+        <option>💼 Зарплата</option><option>📈 Инвестиции</option><option>Другое</option>
       </select>
     </div>
-
-    <div class="form-group">
+    <div class="fg">
       <label>Подкатегория</label>
-      <select id="subcategory">
-        <option value="">— сначала выбери категорию —</option>
-      </select>
+      <select id="subcategory"><option value="">—</option></select>
     </div>
-
-    <div class="form-row">
-      <div class="form-group">
-        <label>Дата</label>
-        <input type="date" id="date">
+    <div class="frow">
+      <div class="fg">
+        <label>Дата транзакции</label>
+        <input type="date" id="txDate">
       </div>
-      <div class="form-group">
+      <div class="fg">
         <label>Оплата</label>
         <select id="payMethod">
-          <option>Карта</option>
-          <option>Наличные</option>
-          <option>PayPal</option>
-          <option>Apple Pay</option>
-          <option>Перевод</option>
+          <option>Карта</option><option>Наличные</option><option>PayPal</option>
+          <option>Apple Pay</option><option>Перевод</option>
         </select>
       </div>
     </div>
-
-    <div class="form-group">
+    <div class="fg">
       <label>Магазин / Источник</label>
-      <input type="text" id="store" placeholder="REWE, Lidl, зарплата...">
+      <input type="text" id="store" placeholder="REWE, Lidl, ...">
     </div>
-
-    <div class="form-group">
+    <div class="fg">
       <label>Описание</label>
-      <input type="text" id="description" placeholder="необязательно">
+      <input type="text" id="desc" placeholder="необязательно">
     </div>
   </div>
 
-  <button class="btn-submit" id="submitBtn" onclick="submitTransaction()">
-    Записать в таблицу →
-  </button>
+  <button class="btn btn-p" id="submitBtn" onclick="submitTx()">Записать в таблицу →</button>
 </div>
 
-<!-- ══ ЧЕК ══ -->
+<!-- ═══ ЧЕК ═══ -->
 <div class="panel" id="panel-scan">
+
+  <div class="err-box" id="errBox">
+    <div class="err-box-title" id="errTitle">Ошибка</div>
+    <div class="err-box-txt" id="errText"></div>
+  </div>
+
   <div class="card">
-    <div class="card-title">Сканировать чек</div>
-    <img id="previewImg" class="preview-img" alt="">
+    <div class="ctitle">Фото чека</div>
+    <img id="prevImg" class="prev-img" alt="">
     <div class="scan-zone" id="scanZone" onclick="document.getElementById('fileInput').click()">
-      <div class="scan-icon">📸</div>
-      <div class="scan-title">Фото чека</div>
-      <div class="scan-sub">Нажми чтобы снять камерой или выбрать из галереи</div>
+      <div class="si">📸</div>
+      <div class="st">Сфотографировать чек</div>
+      <div class="ss">Нажми чтобы снять или выбрать из галереи</div>
     </div>
     <input type="file" id="fileInput" accept="image/*" capture="environment" onchange="handlePhoto(this)">
-    <div class="form-group" style="margin-top:14px">
+    <div class="fg" style="margin-top:12px">
       <label>Магазин</label>
       <input type="text" id="scanStore" placeholder="REWE, Lidl, Kaufland...">
     </div>
-  </div>
-
-  <div class="processing" id="processing">
-    <div class="spinner"></div>
-    <div class="processing-text" id="processingText">AI распознаёт чек...</div>
-  </div>
-
-  <div class="ai-result" id="aiResult">
-    <div class="ai-result-title">✨ Распознано AI</div>
-    <div id="productList"></div>
-    <div class="ai-total">
-      <span>Итого</span>
-      <span id="aiTotal">€0.00</span>
+    <div class="fg">
+      <label>Дата транзакции (из чека)</label>
+      <input type="date" id="scanTxDate">
     </div>
   </div>
 
-  <button class="btn-submit" id="scanSubmitBtn" onclick="submitReceiptToSheets()" style="display:none">
+  <div class="proc" id="proc">
+    <div class="spin"></div>
+    <div class="proc-txt" id="procTxt">Отправляю в Claude AI...</div>
+    <div class="proc-step" id="procStep">Анализирую товары и категории</div>
+  </div>
+
+  <div class="ai-box" id="aiBox">
+    <div class="ai-hdr">
+      <div class="ai-hdr-title">✨ Распознано AI</div>
+      <div class="ai-hdr-store" id="aiStore"></div>
+    </div>
+    <div id="catGroups"></div>
+    <div class="ai-total">
+      <div class="ai-total-label">Итого по чеку</div>
+      <div class="ai-total-val" id="aiTotal">€0.00</div>
+    </div>
+  </div>
+
+  <button class="btn btn-p" id="scanBtn" onclick="submitReceipt()" style="display:none">
     Записать все товары в таблицу →
   </button>
-
-  <div style="margin-top:10px">
-    <button class="btn-secondary" onclick="resetScanner()">🔄 Новый чек</button>
-  </div>
+  <button class="btn btn-s" onclick="resetScan()">🔄 Новый чек</button>
 </div>
 
-<!-- ══ ИСТОРИЯ ══ -->
-<div class="panel" id="panel-history">
-  <div class="month-cards">
-    <div class="month-card">
-      <div class="month-card-label">Доходы</div>
-      <div class="month-card-value green" id="summaryIncome">€0</div>
+<!-- ═══ ИСТОРИЯ ═══ -->
+<div class="panel" id="panel-hist">
+  <div class="sum-cards">
+    <div class="sum-card">
+      <div class="sum-lbl">Доходы</div>
+      <div class="sum-val g" id="sumInc">€0</div>
     </div>
-    <div class="month-card">
-      <div class="month-card-label">Расходы</div>
-      <div class="month-card-value red" id="summaryExpense">€0</div>
+    <div class="sum-card">
+      <div class="sum-lbl">Расходы</div>
+      <div class="sum-val r" id="sumExp">€0</div>
     </div>
   </div>
-
   <div class="card">
-    <div class="card-title">Последние записи</div>
-    <div id="historyList">
-      <div style="text-align:center;padding:30px;color:var(--text2);font-size:14px;">
-        Нажми "Обновить" чтобы загрузить данные
-      </div>
-    </div>
+    <div class="ctitle">Последние транзакции</div>
+    <div id="histList"><div style="text-align:center;padding:28px;color:var(--tx2);font-size:13px;">Нажми «Обновить»</div></div>
   </div>
-
-  <button class="btn-submit" onclick="loadHistory()">🔄 Обновить из Google Sheets</button>
+  <button class="btn btn-p" onclick="loadHist()">🔄 Обновить из Google Sheets</button>
 </div>
 
-<!-- ══ НАСТРОЙКИ ══ -->
-<div class="settings-overlay" id="settingsOverlay" onclick="closeIfOutside(event)">
-  <div class="settings-panel">
-    <div class="settings-handle"></div>
-    <div class="settings-title">⚙️ Настройки</div>
+<!-- ═══ НАСТРОЙКИ ═══ -->
+<div class="sett-ov" id="settOv" onclick="closeSett(event)">
+  <div class="sett-panel">
+    <div class="sett-handle"></div>
+    <div class="sett-title">⚙️ Настройки</div>
 
-    <!-- Статус подключения -->
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-title">Статус подключения</div>
-      <div class="status-row">
-        <span class="status-dot" id="dotScript"></span>
-        <span id="statusScript">Apps Script — не настроен</span>
-      </div>
-      <div class="status-row">
-        <span class="status-dot" id="dotClaude"></span>
-        <span id="statusClaude">Claude API — не настроен</span>
-      </div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="ctitle">Статус</div>
+      <div class="status-row"><span class="dot" id="ds"></span><span id="ss">Apps Script</span></div>
+      <div class="status-row"><span class="dot" id="dc"></span><span id="sc">Claude API</span></div>
     </div>
 
-    <div class="form-group">
+    <div class="fg">
       <label>Apps Script URL</label>
-      <div class="url-display">https://script.google.com/macros/s/AKfycbxcoXXFjzGl<br>wnKXhVklruoI7dSaDh0-5fQ6HziqXjBi7aXbKBbkB9Br9TopShBiPQYM/exec</div>
       <input type="text" id="scriptUrl" placeholder="https://script.google.com/macros/s/.../exec">
-      <div class="settings-hint">Уже вставлен твой URL. Можно изменить если задеплоишь заново.</div>
+      <div class="hint">URL твоего задеплоенного веб-приложения</div>
     </div>
-
-    <div class="form-group" style="margin-top:14px">
+    <div class="fg" style="margin-top:12px">
       <label>Claude API Key</label>
-      <input type="password" id="claudeApiKey" placeholder="sk-ant-api03-...">
-      <div class="settings-hint">
-        Получи на <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> — нужен только для сканирования чеков
-      </div>
+      <input type="password" id="claudeKey" placeholder="sk-ant-api03-...">
+      <div class="hint">Нужен для сканирования чеков.<br>Получи на <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys</div>
     </div>
-
-    <div class="form-group" style="margin-top:14px">
+    <div class="fg" style="margin-top:12px">
       <label>Валюта</label>
       <select id="currency">
         <option value="€">€ Евро</option>
@@ -494,324 +297,191 @@ textarea { resize: none; min-height: 70px; }
         <option value="₽">₽ Рубль</option>
       </select>
     </div>
-
-    <button class="btn-submit" onclick="saveSettings()" style="margin-top:8px">💾 Сохранить</button>
-    <div style="height:10px"></div>
-    <button class="btn-secondary" onclick="testConnection()">🔌 Проверить подключение</button>
+    <button class="btn btn-p" onclick="saveSett()" style="margin-top:10px">💾 Сохранить</button>
+    <button class="btn btn-s" onclick="testConn()">🔌 Проверить подключение</button>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ══════════════════════════════════════
-// КОНСТАНТЫ
-// ══════════════════════════════════════
-var DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxcoXXFjzGlwnKXhVklruoI7dSaDh0-5fQ6HziqXjBi7aXbKBbkB9Br9TopShBiPQYM/exec';
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxcoXXFjzGlwnKXhVklruoI7dSaDh0-5fQ6HziqXjBi7aXbKBbkB9Br9TopShBiPQYM/exec';
+var DEFAULT_URL = SCRIPT_URL;
 
 var SUBCATS = {
-  '🛒 Продукты':    ['Супермаркет','Рынок','Онлайн-доставка','Другое'],
-  '🏠 Жильё':       ['Аренда','Коммунальные','Интернет дома','Ремонт','Мебель','Другое'],
-  '🚗 Транспорт':   ['Бензин','Общественный транспорт','Такси','Парковка','Страховка авто','Другое'],
-  '🏥 Здоровье':    ['Аптека','Врач','Страховка','Фитнес','Другое'],
-  '🎭 Развлечения': ['Кино/Театр','Подписки','Путешествия','Игры','Другое'],
-  '👗 Одежда':      ['Одежда','Обувь','Аксессуары','Другое'],
-  '📱 Связь':       ['Мобильная связь','Интернет','Другое'],
-  '📚 Образование': ['Курсы','Книги','Другое'],
-  '🍽 Рестораны':   ['Ресторан','Кафе','Фастфуд','Доставка','Другое'],
-  '💼 Зарплата':    ['Основная работа','Подработка','Другое'],
-  '📈 Инвестиции':  ['Дивиденды','Продажа активов','Другое'],
-  'Другое':         ['Другое']
+  '🛒 Продукты':['Супермаркет','Рынок','Онлайн-доставка','Другое'],
+  '🏠 Жильё':['Аренда','Коммунальные','Интернет','Ремонт','Мебель','Другое'],
+  '🚗 Транспорт':['Бензин','Транспорт','Такси','Парковка','Страховка','Другое'],
+  '🏥 Здоровье':['Аптека','Врач','Страховка','Фитнес','Другое'],
+  '🎭 Развлечения':['Кино/Театр','Подписки','Путешествия','Игры','Другое'],
+  '👗 Одежда':['Одежда','Обувь','Аксессуары','Другое'],
+  '📱 Связь':['Мобильная','Интернет дома','Другое'],
+  '📚 Образование':['Курсы','Книги','Другое'],
+  '🍽 Рестораны':['Ресторан','Кафе','Фастфуд','Доставка еды','Другое'],
+  '💼 Зарплата':['Основная','Подработка','Другое'],
+  '📈 Инвестиции':['Дивиденды','Продажа','Другое'],
+  'Другое':['Другое']
 };
 
-var CAT_ICONS = {
-  '🛒 Продукты':'🛒','🏠 Жильё':'🏠','🚗 Транспорт':'🚗',
-  '🏥 Здоровье':'🏥','🎭 Развлечения':'🎭','👗 Одежда':'👗',
-  '📱 Связь':'📱','📚 Образование':'📚','🍽 Рестораны':'🍽',
-  '💼 Зарплата':'💼','📈 Инвестиции':'📈','Другое':'💳'
-};
+var CAT_ICONS = {'🛒 Продукты':'🛒','🏠 Жильё':'🏠','🚗 Транспорт':'🚗','🏥 Здоровье':'🏥',
+  '🎭 Развлечения':'🎭','👗 Одежда':'👗','📱 Связь':'📱','📚 Образование':'📚',
+  '🍽 Рестораны':'🍽','💼 Зарплата':'💼','📈 Инвестиции':'📈','Другое':'💳'};
 
-var CAT_BG = {
-  '🛒 Продукты':'rgba(0,230,118,0.12)','🏠 Жильё':'rgba(0,184,212,0.12)',
-  '🚗 Транспорт':'rgba(255,171,64,0.12)','🏥 Здоровье':'rgba(255,82,82,0.12)',
-  '🎭 Развлечения':'rgba(124,77,255,0.12)','💼 Зарплата':'rgba(0,230,118,0.12)',
-};
+var CAT_BG = {'🛒 Продукты':'rgba(0,230,118,.12)','🏠 Жильё':'rgba(0,184,212,.12)',
+  '🚗 Транспорт':'rgba(255,171,64,.12)','🏥 Здоровье':'rgba(255,82,82,.12)',
+  '🎭 Развлечения':'rgba(124,77,255,.12)','💼 Зарплата':'rgba(0,230,118,.12)',
+  '📈 Инвестиции':'rgba(0,230,118,.12)'};
 
-var FOOD_MAP = {
+// Food categories mapping
+var FOOD_CATS = {
   'Овощи/Фрукты':'🥦 Овощи/Фрукты','Мясо':'🥩 Мясо','Рыба':'🐟 Рыба',
   'Хлеб/Выпечка':'🍞 Хлеб/Выпечка','Молочное':'🥛 Молочное',
   'Углеводы':'🍝 Углеводы','Вода/Напитки':'💧 Вода/Напитки',
   'Алкоголь':'🍺 Алкоголь','Сладкое':'🍬 Сладкое',
   'Бытовая химия':'🧴 Бытовая химия','Гигиена':'🧻 Гигиена',
-  'Консервы':'🥫 Консервы','Другое':'Другое'
+  'Консервы':'🥫 Консервы','Другое':'❓ Другое'
+};
+var FOOD_ICONS = {'Овощи/Фрукты':'🥦','Мясо':'🥩','Рыба':'🐟','Хлеб/Выпечка':'🍞',
+  'Молочное':'🥛','Углеводы':'🍝','Вода/Напитки':'💧','Алкоголь':'🍺',
+  'Сладкое':'🍬','Бытовая химия':'🧴','Гигиена':'🧻','Консервы':'🥫','Другое':'❓'};
+
+var state = {type:'Расход', receipt:null};
+
+// ── INIT ──────────────────────────────────
+window.onload = function(){
+  var today = new Date().toISOString().split('T')[0];
+  document.getElementById('txDate').value = today;
+  document.getElementById('scanTxDate').value = today;
+  loadSett();
+  updateDots();
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  }
 };
 
-var state = { type:'Расход', receiptData:null };
-
-// ══════════════════════════════════════
-// INIT
-// ══════════════════════════════════════
-window.onload = function() {
-  document.getElementById('date').value = new Date().toISOString().split('T')[0];
-  loadSettings();
-  updateStatusDots();
-};
-
-// ══════════════════════════════════════
-// TABS
-// ══════════════════════════════════════
-function switchTab(tab, el) {
-  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
-  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+// ── TABS ──────────────────────────────────
+function goTab(tab, el){
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
   document.getElementById('panel-'+tab).classList.add('active');
   el.classList.add('active');
-  if(tab==='history') loadHistory();
 }
 
-// ══════════════════════════════════════
-// TYPE
-// ══════════════════════════════════════
-function setType(type, el) {
-  state.type = type;
-  document.querySelectorAll('.type-btn').forEach(function(b){
-    b.classList.remove('active-expense','active-income','active-transfer');
-  });
-  if(type==='Расход') el.classList.add('active-expense');
-  else if(type==='Доход') el.classList.add('active-income');
-  else el.classList.add('active-transfer');
+// ── TYPE ──────────────────────────────────
+function setType(t,el){
+  state.type=t;
+  document.querySelectorAll('.ttype').forEach(function(b){b.classList.remove('ae','ai','at');});
+  if(t==='Расход') el.classList.add('ae');
+  else if(t==='Доход') el.classList.add('ai');
+  else el.classList.add('at');
 }
 
-// ══════════════════════════════════════
-// SUBCATEGORIES
-// ══════════════════════════════════════
-function updateSubcategories() {
-  var cat = document.getElementById('category').value;
-  var sub = document.getElementById('subcategory');
-  sub.innerHTML = '';
+function updateSub(){
+  var cat=document.getElementById('category').value;
+  var sub=document.getElementById('subcategory');
+  sub.innerHTML='';
   (SUBCATS[cat]||['Другое']).forEach(function(s){
-    var o = document.createElement('option');
-    o.value=s; o.textContent=s; sub.appendChild(o);
+    var o=document.createElement('option');o.value=s;o.textContent=s;sub.appendChild(o);
   });
 }
 
-// ══════════════════════════════════════
-// SETTINGS
-// ══════════════════════════════════════
-function openSettings() {
-  loadSettings();
-  updateStatusDots();
-  document.getElementById('settingsOverlay').classList.add('open');
+// ── SETTINGS ──────────────────────────────
+function openSettings(){loadSett();updateDots();document.getElementById('settOv').classList.add('open');}
+function closeSett(e){if(e.target===document.getElementById('settOv'))document.getElementById('settOv').classList.remove('open');}
+function saveSett(){
+  var url=document.getElementById('scriptUrl').value.trim()||SCRIPT_URL;
+  localStorage.setItem('su',url);
+  localStorage.setItem('ck',document.getElementById('claudeKey').value.trim());
+  localStorage.setItem('cur',document.getElementById('currency').value);
+  document.getElementById('settOv').classList.remove('open');
+  updateDots(); toast('✅ Сохранено','ok');
 }
-function closeIfOutside(e) {
-  if(e.target===document.getElementById('settingsOverlay'))
-    document.getElementById('settingsOverlay').classList.remove('open');
+function loadSett(){
+  document.getElementById('scriptUrl').value=localStorage.getItem('su')||SCRIPT_URL;
+  var ck=localStorage.getItem('ck'); if(ck) document.getElementById('claudeKey').value=ck;
+  var cur=localStorage.getItem('cur'); if(cur) document.getElementById('currency').value=cur;
 }
-function saveSettings() {
-  var url = document.getElementById('scriptUrl').value.trim() || DEFAULT_SCRIPT_URL;
-  localStorage.setItem('scriptUrl',   url);
-  localStorage.setItem('claudeKey',   document.getElementById('claudeApiKey').value.trim());
-  localStorage.setItem('currency',    document.getElementById('currency').value);
-  document.getElementById('settingsOverlay').classList.remove('open');
-  updateStatusDots();
-  showToast('✅ Сохранено!','success');
+function updateDots(){
+  var su=localStorage.getItem('su')||SCRIPT_URL;
+  var ck=localStorage.getItem('ck');
+  var ds=document.getElementById('ds'),ss=document.getElementById('ss');
+  var dc=document.getElementById('dc'),sc=document.getElementById('sc');
+  ds.className='dot '+(su?'ok':'no'); ss.textContent='Apps Script — '+(su?'подключён ✓':'не настроен');
+  dc.className='dot '+(ck?'ok':'no'); sc.textContent='Claude API — '+(ck?'настроен ✓':'⚠️ нужен для чеков');
 }
-function loadSettings() {
-  var url = localStorage.getItem('scriptUrl') || DEFAULT_SCRIPT_URL;
-  document.getElementById('scriptUrl').value = url;
-  var ck = localStorage.getItem('claudeKey');
-  if(ck) document.getElementById('claudeApiKey').value = ck;
-  var cur = localStorage.getItem('currency');
-  if(cur) document.getElementById('currency').value = cur;
-}
-function updateStatusDots() {
-  var url = localStorage.getItem('scriptUrl') || DEFAULT_SCRIPT_URL;
-  var ck  = localStorage.getItem('claudeKey');
-  var ds  = document.getElementById('dotScript');
-  var dc  = document.getElementById('dotClaude');
-  ds.className = 'status-dot ' + (url?'ok':'bad');
-  document.getElementById('statusScript').textContent = url ? 'Apps Script — подключён ✓' : 'Apps Script — не настроен';
-  dc.className = 'status-dot ' + (ck?'ok':'bad');
-  document.getElementById('statusClaude').textContent = ck ? 'Claude API — настроен ✓' : 'Claude API — не настроен';
-}
-async function testConnection() {
-  var url = localStorage.getItem('scriptUrl') || DEFAULT_SCRIPT_URL;
-  showToast('Проверяю...','');
-  try {
-    var r = await fetch(url+'?sheet=📋 Транзакции&test=1');
-    if(r.ok){
-      showToast('✅ Подключение работает!','success');
-    } else {
-      showToast('❌ Ошибка: '+r.status,'error');
-    }
-  } catch(e) {
-    showToast('❌ Нет доступа к скрипту','error');
-  }
+async function testConn(){
+  var url=localStorage.getItem('su')||SCRIPT_URL;
+  toast('Проверяю...','');
+  try{
+    var r=await fetch(url+'?sheet='+encodeURIComponent('📋 Транзакции'),{method:'GET'});
+    if(r.ok) toast('✅ Apps Script работает!','ok');
+    else toast('❌ Ошибка: '+r.status,'er');
+  }catch(e){ toast('❌ Нет доступа: '+e.message,'er'); }
 }
 
-// ══════════════════════════════════════
-// SUBMIT TRANSACTION
-// ══════════════════════════════════════
-async function submitTransaction() {
-  var amount = parseFloat(document.getElementById('amount').value);
-  if(!amount||amount<=0){ showToast('❌ Введи сумму','error'); return; }
+// ── WRITE TO SHEET ────────────────────────
+async function writeRow(sheet, row){
+  var url=localStorage.getItem('su')||SCRIPT_URL;
+  try{
+    var r=await fetch(url,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({sheet:sheet,row:row})
+    });
+    var d=await r.json();
+    return d.success===true;
+  }catch(e){ console.error('writeRow:',e); return false; }
+}
 
-  var cat = document.getElementById('category').value;
-  if(!cat){ showToast('❌ Выбери категорию','error'); return; }
+// ── SUBMIT TRANSACTION ────────────────────
+async function submitTx(){
+  var amt=parseFloat(document.getElementById('amount').value);
+  if(!amt||amt<=0){toast('❌ Введи сумму','er');return;}
+  var cat=document.getElementById('category').value;
+  if(!cat){toast('❌ Выбери категорию','er');return;}
 
-  var btn = document.getElementById('submitBtn');
+  var btn=document.getElementById('submitBtn');
   btn.disabled=true; btn.textContent='Записываю...';
 
-  var date = document.getElementById('date').value;
-  var isIncome = state.type==='Доход';
+  var txDate=document.getElementById('txDate').value;
+  var fillDate=new Date().toISOString().split('T')[0];
+  var isIncome=state.type==='Доход';
+  var row, sheet;
 
-  var row, sheetName;
   if(isIncome){
-    sheetName = '💚 Доходы';
-    row = [
-      date,
-      document.getElementById('store').value,
-      cat,
-      amount,
-      'Ежемесячно',
-      document.getElementById('description').value
-    ];
+    sheet='💚 Доходы';
+    row=[txDate,fillDate,document.getElementById('store').value,cat,amt,
+         'Ежемесячно',document.getElementById('desc').value];
   } else {
-    sheetName = '📋 Транзакции';
-    row = [
-      date, cat,
-      document.getElementById('subcategory').value,
-      document.getElementById('description').value,
-      amount, state.type,
-      document.getElementById('store').value,
-      document.getElementById('payMethod').value,
-      ''
-    ];
+    sheet='📋 Транзакции';
+    row=[txDate,fillDate,cat,document.getElementById('subcategory').value,
+         document.getElementById('desc').value,amt,state.type,
+         document.getElementById('store').value,document.getElementById('payMethod').value,''];
   }
 
-  var ok = await writeToSheet(sheetName, row);
+  var ok=await writeRow(sheet,row);
+  if(ok){ toast('✅ Записано!','ok'); }
+  else  { toast('❌ Ошибка записи — проверь настройки','er'); }
 
-  if(ok){
-    showToast('✅ Записано в таблицу!','success');
-    saveLocal(row, sheetName);
-    document.getElementById('amount').value='';
-    document.getElementById('description').value='';
-    document.getElementById('store').value='';
-  } else {
-    saveLocal(row, sheetName);
-    showToast('💾 Сохранено локально','success');
-  }
+  // Сохранить локально в любом случае
+  var loc=JSON.parse(localStorage.getItem('loc')||'[]');
+  loc.unshift({row:row,sheet:sheet,ts:Date.now()});
+  if(loc.length>300) loc=loc.slice(0,300);
+  localStorage.setItem('loc',JSON.stringify(loc));
 
+  document.getElementById('amount').value='';
+  document.getElementById('desc').value='';
+  document.getElementById('store').value='';
   btn.disabled=false; btn.textContent='Записать в таблицу →';
 }
 
-// ══════════════════════════════════════
-// WRITE TO SHEET via Apps Script
-// ══════════════════════════════════════
-async function writeToSheet(sheetName, row) {
-  var url = localStorage.getItem('scriptUrl') || DEFAULT_SCRIPT_URL;
-  try {
-    var resp = await fetch(url, {
-      method:'POST',
-      headers:{'Content-Type':'text/plain'},
-      body: JSON.stringify({sheet: sheetName, row: row})
-    });
-    var data = await resp.json();
-    return data.success === true;
-  } catch(e) {
-    console.error('writeToSheet error:', e);
-    return false;
-  }
-}
-
-// ══════════════════════════════════════
-// LOCAL STORAGE
-// ══════════════════════════════════════
-function saveLocal(row, sheet) {
-  var key = sheet==='💚 Доходы' ? 'localIncome' : 'localTx';
-  var arr = JSON.parse(localStorage.getItem(key)||'[]');
-  arr.unshift(row);
-  if(arr.length>200) arr=arr.slice(0,200);
-  localStorage.setItem(key, JSON.stringify(arr));
-}
-
-// ══════════════════════════════════════
-// HISTORY
-// ══════════════════════════════════════
-async function loadHistory() {
-  var url = localStorage.getItem('scriptUrl') || DEFAULT_SCRIPT_URL;
-  var list = document.getElementById('historyList');
-  list.innerHTML='<div style="text-align:center;padding:20px;color:var(--text2)">Загружаю...</div>';
-
-  var rows = [];
-  try {
-    var r = await fetch(url+'?sheet='+encodeURIComponent('📋 Транзакции'));
-    var d = await r.json();
-    if(d.values && d.values.length>1){
-      rows = d.values.slice(1).reverse(); // без заголовка, новые первые
-    }
-  } catch(e) {
-    // fallback local
-    rows = JSON.parse(localStorage.getItem('localTx')||'[]');
-  }
-
-  if(rows.length===0){
-    list.innerHTML='<div style="text-align:center;padding:30px;color:var(--text2);font-size:14px;">Пока нет записей</div>';
-    return;
-  }
-
-  var income=0, expense=0;
-  var now = new Date();
-  var curMonth = now.getMonth()+1;
-  var curYear  = now.getFullYear();
-  var html='';
-
-  rows.slice(0,30).forEach(function(row){
-    var date   = row[0]||'';
-    var cat    = row[1]||'Другое';
-    var sub    = row[2]||'';
-    var desc   = row[3]||'';
-    var amt    = parseFloat(row[4])||0;
-    var type   = row[5]||'Расход';
-    var store  = row[6]||'';
-    var icon   = CAT_ICONS[cat]||'💳';
-    var bg     = CAT_BG[cat]||'rgba(255,255,255,0.05)';
-    var sign   = type==='Доход'?'+':'-';
-    var cls    = type==='Доход'?'income':'expense';
-
-    // считаем текущий месяц
-    var parts = date.toString().split(/[-\.]/);
-    var rowMonth = parts.length>=2 ? parseInt(parts[1]||parts[0]) : 0;
-    var rowYear  = parts.length>=3 ? parseInt(parts[0]||parts[2]) : curYear;
-    if(rowMonth===curMonth && rowYear===curYear){
-      if(type==='Доход') income+=amt; else expense+=amt;
-    }
-
-    html+='<div class="history-item">';
-    html+='<div class="history-icon" style="background:'+bg+'">'+icon+'</div>';
-    html+='<div class="history-info">';
-    html+='<div class="history-cat">'+cat+'</div>';
-    html+='<div class="history-sub">'+(store||sub||desc||'—')+'</div>';
-    html+='</div>';
-    html+='<div class="history-right">';
-    html+='<div class="history-amount '+cls+'">'+sign+'€'+amt.toFixed(2)+'</div>';
-    html+='<div class="history-date">'+date+'</div>';
-    html+='</div></div>';
-  });
-
-  list.innerHTML = html;
-  var cur = localStorage.getItem('currency')||'€';
-  document.getElementById('summaryIncome').textContent  = cur+income.toFixed(0);
-  document.getElementById('summaryExpense').textContent = cur+expense.toFixed(0);
-}
-
-// ══════════════════════════════════════
-// RECEIPT SCANNER
-// ══════════════════════════════════════
-function handlePhoto(input) {
+// ── RECEIPT SCANNER ───────────────────────
+function handlePhoto(input){
   if(!input.files||!input.files[0]) return;
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    var img = document.getElementById('previewImg');
+  showErr(false);
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var img=document.getElementById('prevImg');
     img.src=e.target.result; img.style.display='block';
     document.getElementById('scanZone').style.display='none';
     recognizeReceipt(e.target.result);
@@ -819,218 +489,363 @@ function handlePhoto(input) {
   reader.readAsDataURL(input.files[0]);
 }
 
-async function recognizeReceipt(dataUrl) {
-  var claudeKey = localStorage.getItem('claudeKey');
-  if(!claudeKey){
-    showToast('❌ Нужен Claude API Key в настройках','error');
-    openSettings(); return;
+function showErr(show, title, text){
+  var box=document.getElementById('errBox');
+  box.style.display=show?'block':'none';
+  if(show){
+    document.getElementById('errTitle').textContent=title||'Ошибка';
+    document.getElementById('errText').textContent=text||'';
   }
-  document.getElementById('processing').style.display='block';
-  document.getElementById('aiResult').style.display='none';
-  document.getElementById('scanSubmitBtn').style.display='none';
-  document.getElementById('processingText').textContent='AI распознаёт чек...';
+}
 
-  var base64   = dataUrl.split(',')[1];
-  var mimeType = dataUrl.split(';')[0].split(':')[1];
+async function recognizeReceipt(dataUrl){
+  var ck=localStorage.getItem('ck');
+  if(!ck){
+    showErr(true,'❌ Нужен Claude API Key',
+      'Открой ⚙️ Настройки и добавь Claude API Key.\n' +
+      'Получи на console.anthropic.com → API Keys → Create Key');
+    document.getElementById('scanZone').style.display='block';
+    document.getElementById('prevImg').style.display='none';
+    return;
+  }
 
-  var prompt = `Ты анализируешь фото кассового чека из магазина.
-Верни ТОЛЬКО JSON, без пояснений и markdown:
+  document.getElementById('proc').style.display='block';
+  document.getElementById('aiBox').style.display='none';
+  document.getElementById('scanBtn').style.display='none';
+  document.getElementById('procTxt').textContent='Отправляю в Claude AI...';
+  document.getElementById('procStep').textContent='Это займёт 5-15 секунд';
+
+  var base64=dataUrl.split(',')[1];
+  var mime=dataUrl.split(';')[0].split(':')[1];
+
+  var prompt=`Ты анализируешь фото кассового чека из продуктового магазина.
+
+Верни ТОЛЬКО валидный JSON без markdown, без пояснений:
 {
-  "store": "название магазина",
-  "date": "YYYY-MM-DD или null",
-  "total": итоговая сумма как число,
+  "store": "название магазина (если видно)",
+  "date": "дата в формате YYYY-MM-DD (если видно на чеке, иначе null)",
+  "total": числовое значение итоговой суммы,
   "items": [
     {
-      "name": "точное название товара из чека",
-      "category": "одна из: Овощи/Фрукты, Мясо, Рыба, Хлеб/Выпечка, Молочное, Углеводы, Вода/Напитки, Алкоголь, Сладкое, Бытовая химия, Гигиена, Консервы, Другое",
-      "qty": количество как число,
-      "price": цена за единицу как число,
-      "total": итого за позицию как число
+      "name": "точное название товара как написано на чеке",
+      "category": "ТОЛЬКО одно из: Овощи/Фрукты, Мясо, Рыба, Хлеб/Выпечка, Молочное, Углеводы, Вода/Напитки, Алкоголь, Сладкое, Бытовая химия, Гигиена, Консервы, Другое",
+      "qty": числовое количество,
+      "price": числовая цена за единицу,
+      "total": числовая итоговая стоимость позиции
     }
   ]
-}`;
+}
 
-  try {
-    var resp = await fetch('https://api.anthropic.com/v1/messages',{
+Правила категоризации:
+- Овощи/Фрукты: все свежие овощи и фрукты
+- Мясо: мясо, птица, колбасы, сосиски
+- Рыба: рыба, морепродукты
+- Хлеб/Выпечка: хлеб, булки, выпечка, тесто
+- Молочное: молоко, сыр, йогурт, творог, масло сливочное, яйца
+- Углеводы: крупы, макароны, рис, мука, картофель, бобовые
+- Вода/Напитки: вода, сок, чай, кофе, лимонады (без алкоголя)
+- Алкоголь: пиво, вино, водка, любой алкоголь
+- Сладкое: конфеты, шоколад, печенье, торты, мороженое
+- Бытовая химия: стиральные порошки, средства для мытья, хозтовары
+- Гигиена: шампунь, мыло, зубная паста, туалетная бумага, косметика
+- Консервы: консервы, соусы, варенье, мёд, растительное масло`;
+
+  try{
+    document.getElementById('procStep').textContent='Claude AI анализирует товары...';
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{
         'Content-Type':'application/json',
-        'x-api-key': claudeKey,
+        'x-api-key':ck,
         'anthropic-version':'2023-06-01',
         'anthropic-dangerous-direct-browser-access':'true'
       },
-      body: JSON.stringify({
+      body:JSON.stringify({
         model:'claude-opus-4-5',
-        max_tokens:2000,
+        max_tokens:4000,
         messages:[{
           role:'user',
           content:[
-            {type:'image',source:{type:'base64',media_type:mimeType,data:base64}},
+            {type:'image',source:{type:'base64',media_type:mime,data:base64}},
             {type:'text',text:prompt}
           ]
         }]
       })
     });
-    var data = await resp.json();
-    if(!resp.ok) throw new Error(data.error?.message||'API error');
 
-    var text = data.content[0].text.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
-    var result = JSON.parse(text);
-    state.receiptData = result;
+    if(!resp.ok){
+      var errData=await resp.json();
+      var errMsg=errData.error?.message||('HTTP '+resp.status);
+      if(resp.status===401) errMsg='Неверный API Key. Проверь в настройках.';
+      if(resp.status===400) errMsg='Ошибка запроса. Попробуй другое фото.';
+      if(resp.status===529) errMsg='Сервер перегружен. Попробуй через минуту.';
+      throw new Error(errMsg);
+    }
 
-    // Очищаем фото из памяти сразу
-    document.getElementById('previewImg').src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    var data=await resp.json();
+    var txt=data.content[0].text;
+    // Убираем markdown если есть
+    txt=txt.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
+    // Находим JSON
+    var start=txt.indexOf('{');
+    var end=txt.lastIndexOf('}');
+    if(start>=0&&end>start) txt=txt.substring(start,end+1);
+
+    var result=JSON.parse(txt);
+    if(!result.items||result.items.length===0) throw new Error('Товары не найдены. Попробуй более чёткое фото.');
+
+    state.receipt=result;
+    // Подставить дату из чека
+    if(result.date) document.getElementById('scanTxDate').value=result.date;
+    if(result.store) document.getElementById('scanStore').value=result.store;
+
+    // Очищаем фото из памяти
+    document.getElementById('prevImg').src='';
     document.getElementById('fileInput').value='';
 
-    displayReceiptResult(result);
+    displayReceipt(result);
+    showErr(false);
 
-  } catch(e) {
+  }catch(e){
     console.error(e);
-    showToast('❌ Ошибка: '+e.message,'error');
+    showErr(true,'❌ '+e.message,
+      e.message.includes('API Key') || e.message.includes('401')
+        ? 'Открой ⚙️ Настройки → добавь Claude API Key'
+        : 'Убедись что фото чёткое и хорошо освещённое. Попробуй ещё раз.');
     document.getElementById('scanZone').style.display='block';
-    document.getElementById('previewImg').style.display='none';
+    document.getElementById('prevImg').style.display='none';
   }
-  document.getElementById('processing').style.display='none';
+  document.getElementById('proc').style.display='none';
 }
 
-function displayReceiptResult(result) {
-  if(result.store) document.getElementById('scanStore').value=result.store;
+function displayReceipt(result){
+  document.getElementById('aiStore').textContent=result.store||'';
 
-  var FOOD_ICONS={'Овощи/Фрукты':'🥦','Мясо':'🥩','Рыба':'🐟','Хлеб/Выпечка':'🍞',
-    'Молочное':'🥛','Углеводы':'🍝','Вода/Напитки':'💧','Алкоголь':'🍺',
-    'Сладкое':'🍬','Бытовая химия':'🧴','Гигиена':'🧻','Консервы':'🥫','Другое':'❓'};
-
-  var html=''; var total=0;
+  // Группируем по категориям
+  var groups={};
   (result.items||[]).forEach(function(item){
+    var cat=item.category||'Другое';
+    if(!groups[cat]) groups[cat]={items:[],total:0};
     var t=item.total||((item.qty||1)*(item.price||0));
-    total+=t;
-    html+='<div class="product-item">';
-    html+='<div><div class="product-name">'+item.name+'</div>';
-    html+='<div class="product-cat">'+(FOOD_ICONS[item.category]||'❓')+' '+item.category+(item.qty>1?' × '+item.qty:'')+'</div></div>';
-    html+='<div class="product-price">€'+t.toFixed(2)+'</div>';
-    html+='</div>';
+    groups[cat].items.push({...item,_total:t});
+    groups[cat].total+=t;
   });
 
-  document.getElementById('productList').innerHTML=html;
-  document.getElementById('aiTotal').textContent='€'+(result.total||total).toFixed(2);
-  document.getElementById('aiResult').style.display='block';
-  document.getElementById('scanSubmitBtn').style.display='block';
+  // Сортируем категории по сумме
+  var sortedCats=Object.keys(groups).sort(function(a,b){return groups[b].total-groups[a].total;});
+
+  var html='';
+  sortedCats.forEach(function(cat){
+    var g=groups[cat];
+    var icon=FOOD_ICONS[cat]||'❓';
+    html+='<div class="cat-group">';
+    html+='<div class="cat-header">';
+    html+='<span class="cat-header-icon">'+icon+'</span>';
+    html+='<span class="cat-header-name">'+cat+'</span>';
+    html+='<span class="cat-header-sum">€'+g.total.toFixed(2)+'</span>';
+    html+='</div>';
+    html+='<div class="cat-items">';
+    g.items.forEach(function(item){
+      html+='<div class="prod-item">';
+      html+='<span class="prod-name">'+item.name+'</span>';
+      if(item.qty>1) html+='<span class="prod-qty">×'+item.qty+'</span>';
+      html+='<span class="prod-price">€'+item._total.toFixed(2)+'</span>';
+      html+='</div>';
+    });
+    html+='</div></div>';
+  });
+
+  document.getElementById('catGroups').innerHTML=html;
+  var total=result.total||(result.items.reduce(function(s,i){return s+(i.total||0);},0));
+  document.getElementById('aiTotal').textContent='€'+total.toFixed(2);
+  document.getElementById('aiBox').style.display='block';
+  document.getElementById('scanBtn').style.display='block';
 }
 
-async function submitReceiptToSheets() {
-  var result = state.receiptData;
-  if(!result||!result.items){ showToast('❌ Нет данных','error'); return; }
+async function submitReceipt(){
+  var result=state.receipt;
+  if(!result){toast('❌ Нет данных','er');return;}
 
-  var btn=document.getElementById('scanSubmitBtn');
+  var btn=document.getElementById('scanBtn');
   btn.disabled=true; btn.textContent='Записываю...';
 
-  var store = document.getElementById('scanStore').value||result.store||'';
-  var date  = result.date||new Date().toISOString().split('T')[0];
-  var scriptUrl = localStorage.getItem('scriptUrl')||DEFAULT_SCRIPT_URL;
-  var totalAmt  = result.total||(result.items.reduce(function(s,i){return s+(i.total||0);},0));
+  var store   = document.getElementById('scanStore').value||result.store||'';
+  var txDate  = document.getElementById('scanTxDate').value||new Date().toISOString().split('T')[0];
+  var fillDate= new Date().toISOString().split('T')[0];
+  var total   = result.total||(result.items.reduce(function(s,i){return s+(i.total||0);},0));
+  var url     = localStorage.getItem('su')||DEFAULT_URL;
 
-  // 1. Пишем каждый товар в Продукты
-  var ok1=true;
-  for(var i=0;i<result.items.length;i++){
-    var item=result.items[i];
-    var t=item.total||((item.qty||1)*(item.price||0));
-    var productRow=[date,store,item.name,FOOD_MAP[item.category]||'Другое',
-      item.qty||1, item.price||0, t];
-    var r = await writeToSheet('🛒 Продукты', productRow);
-    if(!r) ok1=false;
-  }
+  // ── 1. Все товары одним запросом в Продукты ──
+  // Колонки: Дата | Магазин | Товар | Категория | Кол-во | Цена | Сумма
+  var productRows = result.items.map(function(item){
+    var t = item.total||((item.qty||1)*(item.price||0));
+    return [
+      txDate,
+      store,
+      item.name,
+      FOOD_CATS[item.category]||'Другое',
+      item.qty||1,
+      item.price||0,
+      t
+    ];
+  });
 
-  // 2. Пишем общую сумму в Транзакции
-  var trRow=[date,'🛒 Продукты','Супермаркет','Чек: '+store,
-    totalAmt,'Расход',store,'Карта',''];
-  var ok2 = await writeToSheet('📋 Транзакции', trRow);
-  saveLocal(trRow,'📋 Транзакции');
+  var ok1 = false;
+  try{
+    var r1 = await fetch(url,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify({
+        sheet:'🛒 Продукты',
+        rows: productRows
+      })
+    });
+    var d1 = await r1.json();
+    ok1 = d1.success === true;
+    if(d1.error) console.error('Продукты error:', d1.error);
+  }catch(e){ console.error('Продукты fetch error:',e); }
+
+  // ── 2. Общая транзакция в Транзакции ──
+  // Колонки: Дата | Дата заполнения | Категория | Подкат | Описание | Сумма | Тип | Магазин | Оплата | Примечание
+  var trRow = [
+    txDate, fillDate,
+    '🛒 Продукты',
+    'Супермаркет',
+    'Чек: ' + store + ' (' + result.items.length + ' товаров)',
+    total,
+    'Расход',
+    store,
+    'Карта',
+    ''
+  ];
+
+  var ok2 = false;
+  try{
+    var r2 = await fetch(url,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify({sheet:'📋 Транзакции', row: trRow})
+    });
+    var d2 = await r2.json();
+    ok2 = d2.success === true;
+  }catch(e){ console.error('Транзакции fetch error:',e); }
+
+  // Локальное сохранение
+  var loc=JSON.parse(localStorage.getItem('loc')||'[]');
+  loc.unshift({row:trRow,sheet:'📋 Транзакции',ts:Date.now()});
+  if(loc.length>300) loc=loc.slice(0,300);
+  localStorage.setItem('loc',JSON.stringify(loc));
 
   if(ok1&&ok2){
-    showToast('✅ '+result.items.length+' товаров записано!','success');
+    toast('✅ '+result.items.length+' товаров + транзакция записаны!','ok');
+  } else if(ok2){
+    toast('⚠️ Транзакция записана, товары — проверь Apps Script','ok');
   } else {
-    showToast('💾 Частично сохранено локально','success');
+    toast('💾 Сохранено локально (проверь URL в настройках)','er');
   }
 
-  state.receiptData=null;
-  resetScanner();
-  btn.disabled=false;
-  btn.textContent='Записать все товары в таблицу →';
+  state.receipt=null;
+  resetScan();
+  btn.disabled=false; btn.textContent='Записать все товары в таблицу →';
 }
 
-function resetScanner() {
+function resetScan(){
   document.getElementById('scanZone').style.display='block';
-  document.getElementById('previewImg').style.display='none';
-  document.getElementById('previewImg').src='';
-  document.getElementById('aiResult').style.display='none';
-  document.getElementById('scanSubmitBtn').style.display='none';
+  document.getElementById('prevImg').style.display='none';
+  document.getElementById('prevImg').src='';
+  document.getElementById('aiBox').style.display='none';
+  document.getElementById('scanBtn').style.display='none';
   document.getElementById('fileInput').value='';
   document.getElementById('scanStore').value='';
-  state.receiptData=null;
+  document.getElementById('scanTxDate').value=new Date().toISOString().split('T')[0];
+  showErr(false);
+  state.receipt=null;
 }
 
-// ══════════════════════════════════════
-// TOAST
-// ══════════════════════════════════════
-function showToast(msg, type) {
-  var t=document.getElementById('toast');
-  t.textContent=msg;
-  t.className='toast '+(type||'');
-  t.classList.add('show');
-  setTimeout(function(){ t.classList.remove('show'); },3000);
-}
-</script>
+// ── HISTORY ──────────────────────────────
+async function loadHist(){
+  var url=localStorage.getItem('su')||SCRIPT_URL;
+  var list=document.getElementById('histList');
+  list.innerHTML='<div style="text-align:center;padding:20px;color:var(--tx2);font-size:13px;">Загружаю...</div>';
 
-<div id="installBanner" style="display:none;position:fixed;bottom:85px;left:50%;transform:translateX(-50%);
-width:calc(100% - 40px);max-width:440px;background:#1e232c;border:1px solid #00e676;
-border-radius:16px;padding:14px 16px;align-items:center;gap:12px;z-index:150;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
-  <span style="font-size:28px">📱</span>
-  <div style="flex:1">
-    <div style="font-size:14px;font-weight:700;color:#eef0f4">Установить приложение</div>
-    <div style="font-size:12px;color:#7c8898;margin-top:2px">Добавить на экран телефона</div>
-  </div>
-  <button onclick="installPWA()" style="background:#00e676;color:#000;border:none;border-radius:10px;
-  padding:8px 16px;font-weight:800;font-size:13px;cursor:pointer;font-family:Manrope,sans-serif">
-    Установить
-  </button>
-  <button onclick="document.getElementById('installBanner').style.display='none'"
-  style="background:none;border:none;color:#7c8898;cursor:pointer;font-size:18px;padding:0 4px">✕</button>
-</div>
-<script>
-if('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('sw.js')
-      .then(function(reg) { console.log('SW registered'); })
-      .catch(function(e) { console.log('SW error:', e); });
-  });
-}
-
-// PWA install prompt
-var deferredPrompt;
-window.addEventListener('beforeinstallprompt', function(e) {
-  e.preventDefault();
-  deferredPrompt = e;
-  document.getElementById('installBanner').style.display='flex';
-});
-
-function installPWA() {
-  if(deferredPrompt) {
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(function(r){
-      deferredPrompt=null;
-      document.getElementById('installBanner').style.display='none';
-    });
+  var rows=[];
+  try{
+    var r=await fetch(url+'?sheet='+encodeURIComponent('📋 Транзакции'));
+    var d=await r.json();
+    if(d.values&&d.values.length>1) rows=d.values.slice(1).reverse();
+  }catch(e){
+    // fallback: local
+    var loc=JSON.parse(localStorage.getItem('loc')||'[]');
+    rows=loc.filter(function(x){return x.sheet==='📋 Транзакции';}).map(function(x){return x.row;});
   }
+
+  if(rows.length===0){
+    list.innerHTML='<div style="text-align:center;padding:28px;color:var(--tx2);font-size:13px;">Пока нет записей</div>';
+    return;
+  }
+
+  var inc=0,exp=0;
+  var now=new Date();
+  var cm=now.getMonth()+1, cy=now.getFullYear();
+  var html='';
+
+  rows.slice(0,40).forEach(function(row){
+    // row: [txDate, fillDate, cat, sub, desc, amt, type, store, pay, note]
+    var txDate  = row[0]||'';
+    var fillDate= row[1]||'';
+    var cat     = row[2]||'Другое';
+    var sub     = row[3]||'';
+    var desc    = row[4]||'';
+    var amt     = parseFloat(row[5])||0;
+    var type    = row[6]||'Расход';
+    var store   = row[7]||'';
+
+    var icon=CAT_ICONS[cat]||'💳';
+    var bg=CAT_BG[cat]||'rgba(255,255,255,.05)';
+    var sign=type==='Доход'?'+':'-';
+    var cls=type==='Доход'?'inc':'exp';
+
+    // Считаем текущий месяц
+    var tp=txDate.split('-');
+    if(tp.length>=2&&parseInt(tp[0])===cy&&parseInt(tp[1])===cm){
+      if(type==='Доход') inc+=amt; else exp+=amt;
+    }
+
+    // Форматируем даты
+    function fmtDate(d){
+      if(!d) return '';
+      var p=d.split('-');
+      if(p.length===3) return p[2]+'.'+p[1]+'.'+p[0];
+      return d;
+    }
+
+    html+='<div class="hist-item">';
+    html+='<div class="hist-icon" style="background:'+bg+'">'+icon+'</div>';
+    html+='<div class="hist-info">';
+    html+='<div class="hist-cat">'+cat+'</div>';
+    html+='<div class="hist-sub">'+(store||sub||desc||'—')+'</div>';
+    html+='<div class="hist-dates">';
+    if(txDate) html+='<span class="hist-date-tag dt-tx">💳 '+fmtDate(txDate)+'</span>';
+    if(fillDate&&fillDate!==txDate) html+='<span class="hist-date-tag dt-fill">✏️ '+fmtDate(fillDate)+'</span>';
+    html+='</div>';
+    html+='</div>';
+    html+='<div class="hist-right">';
+    html+='<div class="hist-amt '+cls+'">'+sign+'€'+amt.toFixed(2)+'</div>';
+    html+='</div></div>';
+  });
+
+  list.innerHTML=html;
+  var cur=localStorage.getItem('cur')||'€';
+  document.getElementById('sumInc').textContent=cur+inc.toFixed(0);
+  document.getElementById('sumExp').textContent=cur+exp.toFixed(0);
 }
 
-// Check URL params for tab
-var urlParams = new URLSearchParams(window.location.search);
-var tabParam = urlParams.get('tab');
-if(tabParam) {
-  window.addEventListener('DOMContentLoaded', function(){
-    var tabEl = document.querySelector('.tab[onclick*="'+tabParam+'"]');
-    if(tabEl) tabEl.click();
-  });
+// ── TOAST ─────────────────────────────────
+function toast(msg,type){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast '+(type||'');
+  t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},3200);
 }
 </script>
 </body>
