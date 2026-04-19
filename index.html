@@ -12,6 +12,17 @@
 <meta name="apple-mobile-web-app-title" content="Бюджет">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script>
+// Принудительно очищаем старые кэши при каждой загрузке
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(regs) {
+    regs.forEach(function(reg) { reg.unregister(); });
+  });
+  caches.keys().then(function(names) {
+    names.forEach(function(name) { caches.delete(name); });
+  });
+}
+</script>
 <style>
 :root{--bg:#0d0f12;--s:#161a20;--s2:#1e232c;--br:#2a3040;--ac:#00e676;--ac2:#00b8d4;--red:#ff5252;--tx:#eef0f4;--tx2:#7c8898;--tx3:#4a5568;--r:16px;--rs:10px;}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
