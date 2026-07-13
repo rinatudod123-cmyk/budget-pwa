@@ -439,7 +439,9 @@ async function submitTx(){
   var txDate=document.getElementById('txDate').value||todayStr();
   var res;
   if(state.type==='Доход'){
-    res=await post({sheetType:'income',row:[txDate,document.getElementById('store').value,cat,amt,'Ежемесячно',document.getElementById('desc').value]});
+    var incSub=document.getElementById('subcategory').value;
+    var incDesc=(incSub&&incSub!=='Другое'?incSub+' — ':'')+document.getElementById('desc').value;
+    res=await post({sheetType:'income',row:[txDate,document.getElementById('store').value,cat,amt,'Ежемесячно',incDesc]});
   }else{
     res=await post({sheetType:'transactions',row:[txDate,cat,document.getElementById('subcategory').value,document.getElementById('desc').value,amt,state.type,document.getElementById('store').value,document.getElementById('payMethod').value,'',todayStr()]});
   }
@@ -809,10 +811,14 @@ function renderCsvList(){
       html+='<select onchange="csvState.rows['+i+'].pay=this.value;" style="font-size:11px;padding:7px 6px;height:auto;">'+payOpts+'</select>';
       html+='</div>';
     }else{
-      html+='<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;">';
-      html+='<select onchange="csvState.rows['+i+'].cat=this.value;" style="font-size:11px;padding:7px 6px;height:auto;">'+catOpts+'</select>';
-      html+='<div style="font-size:10px;color:var(--tx2);white-space:nowrap;">💰 в лист «Доходы»</div>';
+      var subsInc=base.concat(extra.filter(function(s){return base.indexOf(s)<0;}));
+      var subOptsInc=subsInc.map(function(s){return '<option value="'+s+'"'+(s===row.sub?' selected':'')+'>'+s+'</option>';}).join('');
+      html+='<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center;">';
+      html+='<select onchange="csvState.rows['+i+'].cat=this.value;renderCsvList();" style="font-size:11px;padding:7px 6px;height:auto;">'+catOpts+'</select>';
+      html+='<select onchange="csvState.rows['+i+'].sub=this.value;" style="font-size:11px;padding:7px 6px;height:auto;">'+subOptsInc+'</select>';
+      html+='<button onclick="addCustomCsvSub('+i+')" type="button" style="padding:7px 10px;background:var(--s2);border:1px solid var(--br);border-radius:var(--rs);color:var(--ac);font-size:15px;cursor:pointer;">+</button>';
       html+='</div>';
+      html+='<div style="font-size:10px;color:var(--tx2);margin-top:4px;">💰 в лист «Доходы» (подкатегория уйдёт в примечание)</div>';
     }
     html+='</div>';
   });
@@ -857,7 +863,8 @@ async function submitCsvBatch(){
     btn.textContent='⏳ Записываю '+(i+1)+'/'+sel.length+'...';
     var res;
     if(row.isIncome){
-      res=await post({sheetType:'income',row:[row.date,row.store,row.cat==='Другое'?'Другое':row.cat,row.amount,'Разово',row.zweck.slice(0,120)]});
+      var noteText=(row.sub&&row.sub!=='Другое'?row.sub+' — ':'')+row.zweck.slice(0,110);
+      res=await post({sheetType:'income',row:[row.date,row.store,row.cat==='Другое'?'Другое':row.cat,row.amount,'Разово',noteText]});
     }else{
       res=await post({sheetType:'transactions',row:[row.date,row.cat,row.sub,'',row.amount,'Расход',row.store,row.pay,'',todayStr()]});
     }
