@@ -820,6 +820,7 @@ function renderCsvList(){
       html+='</div>';
       html+='<div style="font-size:10px;color:var(--tx2);margin-top:4px;">💰 в лист «Доходы» (подкатегория уйдёт в примечание)</div>';
     }
+    html+='<input type="text" value="'+(row.note||'').replace(/"/g,'&quot;')+'" placeholder="Комментарий (необязательно)" oninput="csvState.rows['+i+'].note=this.value;" style="font-size:12px;padding:8px 10px;height:auto;margin-top:6px;">';
     html+='</div>';
   });
   list.innerHTML=html;
@@ -863,10 +864,10 @@ async function submitCsvBatch(){
     btn.textContent='⏳ Записываю '+(i+1)+'/'+sel.length+'...';
     var res;
     if(row.isIncome){
-      var noteText=(row.sub&&row.sub!=='Другое'?row.sub+' — ':'')+row.zweck.slice(0,110);
+      var noteText=(row.sub&&row.sub!=='Другое'?row.sub+' — ':'')+(row.note?row.note+' | ':'')+row.zweck.slice(0,90);
       res=await post({sheetType:'income',row:[row.date,row.store,row.cat==='Другое'?'Другое':row.cat,row.amount,'Разово',noteText]});
     }else{
-      res=await post({sheetType:'transactions',row:[row.date,row.cat,row.sub,'',row.amount,'Расход',row.store,row.pay,'',todayStr()]});
+      res=await post({sheetType:'transactions',row:[row.date,row.cat,row.sub,'',row.amount,'Расход',row.store,row.pay,row.note||'',todayStr()]});
     }
     if(res&&res.success)ok++;else fail++;
   }
