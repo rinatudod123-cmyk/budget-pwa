@@ -787,7 +787,11 @@ function renderCsvList(){
   var list=document.getElementById('csvList');
   var html='';
   csvState.rows.forEach(function(row,i){
-    var subs=(SUBS[row.cat]||['Другое']);
+    var stored={};
+    try{stored=JSON.parse(localStorage.getItem('cSubsMain')||'{}');}catch(e){}
+    var base=SUBS[row.cat]||['Другое'];
+    var extra=stored[row.cat]||[];
+    var subs=base.concat(extra.filter(function(s){return base.indexOf(s)<0;}));
     var catOpts=CSV_CATS.map(function(c){return '<option value="'+c+'"'+(c===row.cat?' selected':'')+'>'+c+'</option>';}).join('');
     var subOpts=subs.map(function(s){return '<option value="'+s+'"'+(s===row.sub?' selected':'')+'>'+s+'</option>';}).join('');
     var payOpts=['Карта','Наличные','Перевод','PayPal','Apple Pay'].map(function(p){return '<option value="'+p+'"'+(p===row.pay?' selected':'')+'>'+p+'</option>';}).join('');
@@ -798,13 +802,17 @@ function renderCsvList(){
     html+='<div style="font-size:15px;font-weight:800;color:'+(row.isIncome?'var(--ac)':'var(--red)')+';white-space:nowrap;">'+(row.isIncome?'+':'-')+'€'+row.amount.toFixed(2)+'</div>';
     html+='</div>';
     if(!row.isIncome){
-      html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">';
+      html+='<div style="display:grid;grid-template-columns:1fr 1fr auto 1fr;gap:6px;align-items:center;">';
       html+='<select onchange="csvState.rows['+i+'].cat=this.value;renderCsvList();" style="font-size:11px;padding:7px 6px;height:auto;">'+catOpts+'</select>';
       html+='<select onchange="csvState.rows['+i+'].sub=this.value;" style="font-size:11px;padding:7px 6px;height:auto;">'+subOpts+'</select>';
+      html+='<button onclick="addCustomCsvSub('+i+')" type="button" style="padding:7px 10px;background:var(--s2);border:1px solid var(--br);border-radius:var(--rs);color:var(--ac);font-size:15px;cursor:pointer;">+</button>';
       html+='<select onchange="csvState.rows['+i+'].pay=this.value;" style="font-size:11px;padding:7px 6px;height:auto;">'+payOpts+'</select>';
       html+='</div>';
     }else{
-      html+='<div style="font-size:11px;color:var(--tx2);">💰 Доход — будет записан в лист «Доходы»</div>';
+      html+='<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;">';
+      html+='<select onchange="csvState.rows['+i+'].cat=this.value;" style="font-size:11px;padding:7px 6px;height:auto;">'+catOpts+'</select>';
+      html+='<div style="font-size:10px;color:var(--tx2);white-space:nowrap;">💰 в лист «Доходы»</div>';
+      html+='</div>';
     }
     html+='</div>';
   });
@@ -818,6 +826,23 @@ function renderCsvList(){
 function toggleCsvRow(i,checked){
   csvState.rows[i].selected=checked;
   renderCsvList();
+}
+
+function addCustomCsvSub(i){
+  var row=csvState.rows[i];
+  var name=prompt('Новая подкатегория для "'+row.cat+'":');
+  if(!name||!name.trim())return;
+  name=name.trim();
+  var stored={};
+  try{stored=JSON.parse(localStorage.getItem('cSubsMain')||'{}');}catch(e){}
+  if(!stored[row.cat])stored[row.cat]=[];
+  if(stored[row.cat].indexOf(name)<0){
+    stored[row.cat].push(name);
+    localStorage.setItem('cSubsMain',JSON.stringify(stored));
+  }
+  row.sub=name;
+  renderCsvList();
+  toast('✅ Добавлено: '+name,'ok');
 }
 
 async function submitCsvBatch(){
