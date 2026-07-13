@@ -111,6 +111,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   <button class="tab active" onclick="goTab('add',this)"><span class="ti">➕</span>Внести</button>
   <button class="tab" onclick="goTab('scan',this)"><span class="ti">📷</span>Чек</button>
   <button class="tab" onclick="goTab('hist',this)"><span class="ti">📋</span>История</button>
+  <button class="tab" onclick="goTab('csv',this)"><span class="ti">🏦</span>Банк</button>
 </div>
 
 <!-- ВНЕСТИ -->
@@ -153,7 +154,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <label>Оплата</label>
         <select id="payMethod">
           <option>Карта</option><option>Наличные</option>
-          <option>PayPal</option><option>Apple Pay</option>
+          <option>PayPal</option><option>Apple Pay</option><option>Перевод</option>
         </select>
       </div>
     </div>
@@ -254,6 +255,38 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div id="histList"><div style="text-align:center;padding:28px;color:var(--tx2)">Нажми «Обновить»</div></div>
   </div>
   <button class="btn btn-p" onclick="loadHist()">🔄 Обновить из таблицы</button>
+</div>
+
+<!-- БАНК: ЗАГРУЗКА CSV -->
+<div class="panel" id="panel-csv">
+  <div class="err-box" id="csvErrBox">
+    <div class="err-title" id="csvErrTitle">Ошибка</div>
+    <div class="err-txt" id="csvErrTxt"></div>
+  </div>
+  <div class="card" id="csvUploadCard">
+    <div class="ctitle">Выписка из банка</div>
+    <button class="scan-zone" onclick="document.getElementById('csvFileInput').click()" type="button">
+      <div style="font-size:44px;margin-bottom:10px">🏦</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:5px">Загрузить CSV-выписку</div>
+      <div style="font-size:12px;color:var(--tx2)">Формат Sparkassen/VR-Bank (semicolon, DD.MM.YYYY)</div>
+    </button>
+    <input type="file" id="csvFileInput" accept=".csv,text/csv" style="display:none" onchange="handleCsvFile(this)">
+  </div>
+  <div class="proc" id="csvProc">
+    <div class="spin"></div>
+    <div style="font-size:13px;color:var(--tx2);font-weight:500" id="csvProcTxt">Читаю файл...</div>
+  </div>
+  <div id="csvSummary" style="display:none">
+    <div class="sum-row">
+      <div class="sum-card"><div class="sum-lbl">Выбрано</div><div class="sum-val g" id="csvSelCount">0</div></div>
+      <div class="sum-card"><div class="sum-lbl">Пропущено (дубли)</div><div class="sum-val" id="csvDupCount" style="color:var(--tx2)">0</div></div>
+    </div>
+    <div class="card" style="padding:10px 14px;">
+      <div id="csvList"></div>
+    </div>
+    <button class="btn btn-p" id="csvSubmitBtn" onclick="submitCsvBatch()">Записать выбранные →</button>
+    <button class="btn btn-s" onclick="resetCsv()">🔄 Загрузить другой файл</button>
+  </div>
 </div>
 
 <!-- НАСТРОЙКИ -->
@@ -594,6 +627,219 @@ function addCustomSub() {
   toast('✅ Добавлено: '+name,'ok');
 }
 
+// ===== БАНК: ЗАГРУЗКА CSV =====
+var csvState={rows:[],existingSigs:{}};
+
+var CSV_RULES=[
+  {re:/shell|aral|jet\b|esso|total energ|tankstelle|tanken/i,cat:'🚗 Транспорт',sub:'Бензин'},
+  {re:/lidl|penny|kaufland|rewe|netto|edeka|norma|mix markt|dorfladen|real\b|globus/i,cat:'🛒 Продукты',sub:'Супермаркет'},
+  {re:/rossmann|dm[\s-]?drogerie|m[üu]ller\b/i,cat:'🛒 Продукты',sub:'Супермаркет'},
+  {re:/apotheke/i,cat:'🏥 Здоровье',sub:'Аптека'},
+  {re:/tabak|cigo\b|kiosk/i,cat:'🛒 Продукты',sub:'Другое'},
+  {re:/apple\.com|spotify|netflix|disney|amazon prime/i,cat:'🎭 Развлечения',sub:'Подписки'},
+  {re:/paypal/i,cat:'Другое',sub:'Другое'},
+  {re:/telekom|vodafone|o2\b|mobilfunk/i,cat:'📱 Связь',sub:'Мобильная'},
+  {re:/miete|hausverwalt/i,cat:'🏠 Жильё',sub:'Аренда'},
+  {re:/continentale|krankenkasse|versicherung/i,cat:'🏥 Здоровье',sub:'Страховка'},
+  {re:/obi\b|hornbach|bauhaus|baufachmarkt/i,cat:'🏠 Жильё',sub:'Ремонт'},
+  {re:/h&m|zara|c&a|new yorker|tk maxx|kik\b/i,cat:'👗 Одежда',sub:'Одежда'},
+  {re:/bäckerei|baeckerei|metzgerei/i,cat:'🛒 Продукты',sub:'Другое'},
+  {re:/geldautomat|auszahlung girocard/i,cat:'Другое',sub:'Другое'}
+];
+
+function goToCsvTab(){var el=document.querySelector('.tab:nth-child(4)');goTab('csv',el||document.querySelector('.tab'));}
+
+function parseDeAmount(s){
+  if(!s)return 0;
+  s=s.trim().replace(/\./g,'').replace(',','.');
+  var n=parseFloat(s);
+  return isNaN(n)?0:n;
+}
+function deDateToIso(d){
+  var p=(d||'').trim().split('.');
+  if(p.length!==3)return '';
+  return p[2]+'-'+p[1]+'-'+p[0];
+}
+function guessCat(text){
+  for(var i=0;i<CSV_RULES.length;i++){if(CSV_RULES[i].re.test(text))return{cat:CSV_RULES[i].cat,sub:CSV_RULES[i].sub};}
+  return{cat:'Другое',sub:'Другое'};
+}
+
+function parseBankCsv(text){
+  text=text.replace(/^\uFEFF/,'');
+  var lines=text.split(/\r\n|\n|\r/).filter(function(l){return l.trim().length;});
+  if(!lines.length)return[];
+  var header=lines[0].split(';').map(function(h){return h.trim();});
+  function idx(name){return header.indexOf(name);}
+  var iBuchung=idx('Buchungstag'),iValuta=idx('Valutadatum'),iName=idx('Name Zahlungsbeteiligter'),
+      iText=idx('Buchungstext'),iZweck=idx('Verwendungszweck'),iBetrag=idx('Betrag');
+  if(iBetrag<0||iZweck<0){throw new Error('Не найдены нужные колонки в CSV (Betrag/Verwendungszweck). Проверь, что это выписка твоего банка.');}
+  var out=[];
+  for(var r=1;r<lines.length;r++){
+    var cols=lines[r].split(';');
+    if(cols.length<2)continue;
+    var zweck=(cols[iZweck]||'').trim();
+    var name=iName>=0?(cols[iName]||'').trim():'';
+    var btext=iText>=0?(cols[iText]||'').trim():'';
+    var amount=parseDeAmount(cols[iBetrag]);
+    if(!amount)continue;
+    var um=zweck.match(/Umsatz vom (\d{2}\.\d{2}\.\d{4})/);
+    var dateDe=um?um[1]:(cols[iValuta]||cols[iBuchung]||'').trim();
+    var iso=deDateToIso(dateDe);
+    if(!iso)continue;
+    var isCard=/MC Hauptkarte|Kartenzahlung girocard/i.test(zweck+' '+btext);
+    var store=name||zweck.split(/\s{2,}|,/)[0]||'';
+    store=store.replace(/\s+/g,' ').trim().slice(0,60);
+    var guess=guessCat(store+' '+zweck+' '+btext);
+    var isIncome=amount>0;
+    out.push({
+      date:iso,dateDe:dateDe,store:store,zweck:zweck,amount:Math.abs(amount),
+      isIncome:isIncome,cat:guess.cat,sub:guess.sub,
+      pay:isCard?'Карта':(isIncome?'Перевод':'Перевод'),
+      note:'',selected:true,dup:false
+    });
+  }
+  return out;
+}
+
+async function fetchExistingSigs(){
+  var url=getUrl();var sigs={};
+  if(!url)return sigs;
+  try{
+    var r=await fetch(url+'?type=transactions');var d=await r.json();
+    if(d.values&&d.values.length>1){
+      d.values.slice(1).forEach(function(row){
+        var dt=String(row[0]||'');
+        var p=dt.indexOf('-')>=0?dt.split('-'):(dt.indexOf('.')>=0?dt.split('.').reverse():[]);
+        if(p.length===3){
+          var iso=p[0]+'-'+p[1]+'-'+p[2];
+          var amt=parseFloat(row[4])||0;
+          sigs[iso+'|'+amt.toFixed(2)]=true;
+        }
+      });
+    }
+    var r2=await fetch(url+'?type=income');
+    if(r2.ok){
+      var d2=await r2.json();
+      if(d2.values&&d2.values.length>1){
+        d2.values.slice(1).forEach(function(row){
+          var dt=String(row[0]||'');
+          var p=dt.indexOf('-')>=0?dt.split('-'):(dt.indexOf('.')>=0?dt.split('.').reverse():[]);
+          if(p.length===3){
+            var iso=p[0]+'-'+p[1]+'-'+p[2];
+            var amt=parseFloat(row[3])||0;
+            sigs[iso+'|'+amt.toFixed(2)]=true;
+          }
+        });
+      }
+    }
+  }catch(e){}
+  return sigs;
+}
+
+function handleCsvFile(input){
+  if(!input.files||!input.files[0])return;
+  showCsvErr(false);
+  document.getElementById('csvUploadCard').style.display='none';
+  document.getElementById('csvProc').style.display='block';
+  var reader=new FileReader();
+  reader.onload=async function(e){
+    try{
+      var rows=parseBankCsv(e.target.result);
+      if(!rows.length)throw new Error('Не нашёл ни одной операции в файле.');
+      document.getElementById('csvProcTxt').textContent='Сверяю с таблицей (ищу дубли)...';
+      var sigs=await fetchExistingSigs();
+      rows.forEach(function(row){
+        var sig=row.date+'|'+row.amount.toFixed(2);
+        if(sigs[sig]){row.dup=true;row.selected=false;}
+      });
+      csvState.rows=rows;
+      renderCsvList();
+      document.getElementById('csvProc').style.display='none';
+      document.getElementById('csvSummary').style.display='block';
+    }catch(err){
+      document.getElementById('csvProc').style.display='none';
+      document.getElementById('csvUploadCard').style.display='block';
+      showCsvErr(true,'❌ '+err.message,'Проверь, что файл — это CSV-выписка из банка (semicolon-разделитель).');
+    }
+  };
+  reader.readAsText(input.files[0],'UTF-8');
+}
+
+function showCsvErr(show,title,txt){
+  document.getElementById('csvErrBox').style.display=show?'block':'none';
+  if(show){document.getElementById('csvErrTitle').textContent=title||'Ошибка';document.getElementById('csvErrTxt').textContent=txt||'';}
+}
+
+var CSV_CATS=['🛒 Продукты','🏠 Жильё','🚗 Транспорт','🏥 Здоровье','🎭 Развлечения','👗 Одежда','📱 Связь','📚 Образование','🍽 Рестораны','💼 Зарплата','📈 Инвестиции','Другое'];
+
+function renderCsvList(){
+  var list=document.getElementById('csvList');
+  var html='';
+  csvState.rows.forEach(function(row,i){
+    var subs=(SUBS[row.cat]||['Другое']);
+    var catOpts=CSV_CATS.map(function(c){return '<option value="'+c+'"'+(c===row.cat?' selected':'')+'>'+c+'</option>';}).join('');
+    var subOpts=subs.map(function(s){return '<option value="'+s+'"'+(s===row.sub?' selected':'')+'>'+s+'</option>';}).join('');
+    var payOpts=['Карта','Наличные','Перевод','PayPal','Apple Pay'].map(function(p){return '<option value="'+p+'"'+(p===row.pay?' selected':'')+'>'+p+'</option>';}).join('');
+    html+='<div style="padding:10px 0;border-top:'+(i?'1px solid rgba(42,48,64,.4)':'none')+';opacity:'+(row.selected?'1':'.45')+'">';
+    html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">';
+    html+='<input type="checkbox" '+(row.selected?'checked':'')+' onchange="toggleCsvRow('+i+',this.checked)" style="width:18px;height:18px;flex-shrink:0;">';
+    html+='<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(row.store||'—')+'</div><div style="font-size:11px;color:var(--tx2);">'+fmtD(row.date)+(row.dup?' · ⚠️ похоже уже есть':'')+'</div></div>';
+    html+='<div style="font-size:15px;font-weight:800;color:'+(row.isIncome?'var(--ac)':'var(--red)')+';white-space:nowrap;">'+(row.isIncome?'+':'-')+'€'+row.amount.toFixed(2)+'</div>';
+    html+='</div>';
+    if(!row.isIncome){
+      html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">';
+      html+='<select onchange="csvState.rows['+i+'].cat=this.value;renderCsvList();" style="font-size:11px;padding:7px 6px;height:auto;">'+catOpts+'</select>';
+      html+='<select onchange="csvState.rows['+i+'].sub=this.value;" style="font-size:11px;padding:7px 6px;height:auto;">'+subOpts+'</select>';
+      html+='<select onchange="csvState.rows['+i+'].pay=this.value;" style="font-size:11px;padding:7px 6px;height:auto;">'+payOpts+'</select>';
+      html+='</div>';
+    }else{
+      html+='<div style="font-size:11px;color:var(--tx2);">💰 Доход — будет записан в лист «Доходы»</div>';
+    }
+    html+='</div>';
+  });
+  list.innerHTML=html;
+  var sel=csvState.rows.filter(function(r){return r.selected;});
+  var dup=csvState.rows.filter(function(r){return r.dup;});
+  document.getElementById('csvSelCount').textContent=sel.length;
+  document.getElementById('csvDupCount').textContent=dup.length;
+}
+
+function toggleCsvRow(i,checked){
+  csvState.rows[i].selected=checked;
+  renderCsvList();
+}
+
+async function submitCsvBatch(){
+  var sel=csvState.rows.filter(function(r){return r.selected;});
+  if(!sel.length){toast('❌ Ничего не выбрано','er');return;}
+  var url=getUrl();if(!url){showCsvErr(true,'❌ Нет URL','Открой ⚙️ → введи URL → Сохранить');return;}
+  var btn=document.getElementById('csvSubmitBtn');
+  btn.disabled=true;
+  var ok=0,fail=0;
+  for(var i=0;i<sel.length;i++){
+    var row=sel[i];
+    btn.textContent='⏳ Записываю '+(i+1)+'/'+sel.length+'...';
+    var res;
+    if(row.isIncome){
+      res=await post({sheetType:'income',row:[row.date,row.store,row.cat==='Другое'?'Другое':row.cat,row.amount,'Разово',row.zweck.slice(0,120)]});
+    }else{
+      res=await post({sheetType:'transactions',row:[row.date,row.cat,row.sub,'',row.amount,'Расход',row.store,row.pay,'',todayStr()]});
+    }
+    if(res&&res.success)ok++;else fail++;
+  }
+  btn.disabled=false;btn.textContent='Записать выбранные →';
+  if(fail===0){toast('✅ Записано операций: '+ok,'ok');csvState.rows=csvState.rows.filter(function(r){return !r.selected;});renderCsvList();if(!csvState.rows.length)resetCsv();}
+  else toast('⚠️ Записано: '+ok+', ошибок: '+fail,'er');
+}
+
+function resetCsv(){
+  csvState.rows=[];
+  document.getElementById('csvFileInput').value='';
+  document.getElementById('csvUploadCard').style.display='block';
+  document.getElementById('csvSummary').style.display='none';
+  showCsvErr(false);
+}
 </script>
 </body>
 </html>
