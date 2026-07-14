@@ -376,7 +376,7 @@ var state={type:'Расход',receipt:null};
 var histState={rows:[]};
 
 window.onload=function(){
-  var t=new Date().toISOString().split('T')[0];
+  var t=todayStr();
   document.getElementById('txDate').value=t;
   document.getElementById('scanDate').value=t;
   loadSett(); updateDots();
@@ -463,7 +463,11 @@ function addCustomCat(context){
 }
 
 function getUrl(){return localStorage.getItem('su')||'';}
-function todayStr(){return new Date().toISOString().split('T')[0];}
+function todayStr(){
+  var d=new Date();
+  d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
+  return d.toISOString().split('T')[0];
+}
 function dateParts(d){
   var s=String(d||'').trim();
   if(!s)return null;
