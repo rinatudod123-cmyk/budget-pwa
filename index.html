@@ -462,7 +462,14 @@ function addCustomCat(context){
 
 function getUrl(){return localStorage.getItem('su')||'';}
 function todayStr(){return new Date().toISOString().split('T')[0];}
-function fmtD(d){if(!d)return'';var p=String(d).split('-');return p.length===3?p[2]+'.'+p[1]+'.'+p[0]:d;}
+function dateParts(d){
+  var s=String(d||'').trim();
+  if(!s)return null;
+  if(s.indexOf('T')>0)s=s.split('T')[0];
+  var p=s.indexOf('-')>=0?s.split('-'):(s.indexOf('.')>=0?s.split('.').reverse():null);
+  return p&&p.length===3?p:null;
+}
+function fmtD(d){var p=dateParts(d);return p?p[2]+'.'+p[1]+'.'+p[0]:d;}
 
 function goTab(tab,el){
   document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
@@ -765,7 +772,7 @@ async function saveHistCat(idx){
   row[1]=catEl.value;
   row[2]=subEl.value||'Другое';
   if(btn){btn.disabled=true;btn.textContent='…';}
-  var res=await post({action:'updateTransaction',sheetType:'transactions',rowNumber:item.rowNumber,category:row[1],subcategory:row[2],updates:{2:row[1],3:row[2]}});
+  var res=await post({action:'updateTransaction',rowNumber:item.rowNumber,category:row[1],subcategory:row[2],updates:{2:row[1],3:row[2]}});
   if(res&&res.success){
     item.row=row;
     if(statsState.txRows&&statsState.txRows[item.rowNumber-2])statsState.txRows[item.rowNumber-2]=row;
@@ -1182,9 +1189,7 @@ async function loadStats(){
 }
 
 function ymOf(dateStr){
-  var s=String(dateStr||'');
-  if(!s)return null;
-  var p=s.indexOf('-')>=0?s.split('-'):(s.indexOf('.')>=0?s.split('.').reverse():null);
+  var p=dateParts(dateStr);
   if(!p||p.length!==3)return null;
   return {y:parseInt(p[0]),m:parseInt(p[1])};
 }
