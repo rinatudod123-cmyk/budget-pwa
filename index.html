@@ -372,6 +372,7 @@ var CAT_BG={'🛒 Продукты':'rgba(0,230,118,.12)','🏠 Жильё':'rgb
 var FOOD_ICON={'Овощи/Фрукты':'🥦','Мясо':'🥩','Рыба':'🐟','Хлеб/Выпечка':'🍞','Молочное':'🥛','Углеводы':'🍝','Вода/Напитки':'💧','Алкоголь':'🍺','Сладкое':'🍬','Бытовая химия':'🧴','Гигиена':'🧻','Консервы':'🥫','Другое':'❓'};
 var FOOD_ORDER=['Овощи/Фрукты','Мясо','Рыба','Хлеб/Выпечка','Молочное','Углеводы','Вода/Напитки','Алкоголь','Сладкое','Бытовая химия','Гигиена','Консервы','Другое'];
 var state={type:'Расход',receipt:null};
+var histState={rows:[]};
 
 window.onload=function(){
   var t=new Date().toISOString().split('T')[0];
@@ -566,6 +567,15 @@ function mergedSubcategories(){
   return result;
 }
 
+function optionsHtml(values,selected){
+  return values.map(function(v){return '<option value="'+v+'"'+(v===selected?' selected':'')+'>'+v+'</option>';}).join('');
+}
+
+function subcategoriesFor(cat){
+  var map=mergedSubcategories();
+  return map[cat]&&map[cat].length?map[cat]:['Другое'];
+}
+
 async function syncReferenceData(){
   var url=getUrl();
   if(!url)return;
@@ -706,22 +716,66 @@ async function loadHist(){
   var url=getUrl(),list=document.getElementById('histList');
   list.innerHTML='<div style="text-align:center;padding:20px;color:var(--tx2)">Загружаю...</div>';
   var rows=[];
-  try{var r=await fetch(url+'?type=transactions');var d=await r.json();if(d.values&&d.values.length>1)rows=d.values.slice(1).reverse();}catch(e){}
+  try{
+    var r=await fetch(url+'?type=transactions');var d=await r.json();
+    if(d.values&&d.values.length>1){
+      var dataRows=d.values.slice(1);
+      rows=dataRows.map(function(row,i){return{row:row,rowNumber:i+2};}).reverse();
+    }
+  }catch(e){}
+  histState.rows=rows;
   if(!rows.length){list.innerHTML='<div style="text-align:center;padding:28px;color:var(--tx2)">Нет записей</div>';return;}
   var inc=0,exp=0,now=new Date(),cm=now.getMonth()+1,cy=now.getFullYear(),html='';
-  rows.slice(0,60).forEach(function(row){
+  rows.slice(0,60).forEach(function(item,idx){
+    var row=item.row;
     var txDate=String(row[0]||''),cat=String(row[1]||'Другое'),sub=String(row[2]||''),desc=String(row[3]||''),amt=parseFloat(row[4])||0,type=String(row[5]||'Расход'),store=String(row[6]||''),addD=String(row[8]||'');
     var icon=CAT_ICONS[cat]||'💳',bg=CAT_BG[cat]||'rgba(255,255,255,.05)',sign=type==='Доход'?'+':'-',cls=type==='Доход'?'inc':'exp';
     var p=txDate.split('-');if(p.length===3&&parseInt(p[0])===cy&&parseInt(p[1])===cm){if(type==='Доход')inc+=amt;else if(type==='Расход')exp+=amt;}
-    html+='<div class="tx-item"><div class="tx-icon" style="background:'+bg+'">'+icon+'</div><div class="tx-info"><div class="tx-cat">'+cat+'</div><div class="tx-sub">'+(store||sub||desc||'—')+'</div><div class="tx-dates">';
+    var cats=allCategories(),subs=subcategoriesFor(cat);
+    if(sub&&subs.indexOf(sub)<0)subs=[sub].concat(subs);
+    html+='<div class="tx-item"><div class="tx-icon" style="background:'+bg+'">'+icon+'</div><div class="tx-info"><div class="tx-cat">'+cat+'</div><div class="tx-sub">'+(store||desc||'—')+'</div><div class="tx-dates">';
     if(txDate)html+='<span class="tx-tag tag-tx">💳 '+fmtD(txDate)+'</span>';
     if(addD&&addD!==txDate)html+='<span class="tx-tag tag-add">✏️ '+fmtD(addD)+'</span>';
+    html+='</div><div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;margin-top:8px;">';
+    html+='<select id="histCat'+idx+'" onchange="updateHistSub('+idx+')" style="font-size:11px;padding:7px 6px;height:auto;">'+optionsHtml(cats,cat)+'</select>';
+    html+='<select id="histSub'+idx+'" style="font-size:11px;padding:7px 6px;height:auto;">'+optionsHtml(subs,sub||'Другое')+'</select>';
+    html+='<button id="histSave'+idx+'" onclick="saveHistCat('+idx+')" type="button" title="Сохранить" style="padding:7px 10px;background:var(--s2);border:1px solid var(--br);border-radius:var(--rs);color:var(--ac);font-size:14px;cursor:pointer;">✓</button>';
     html+='</div></div><div class="tx-amt '+cls+'">'+sign+'€'+amt.toFixed(2)+'</div></div>';
   });
   list.innerHTML=html;
   var cur=localStorage.getItem('cur')||'€';
   document.getElementById('sumInc').textContent=cur+inc.toFixed(0);
   document.getElementById('sumExp').textContent=cur+exp.toFixed(0);
+}
+
+function updateHistSub(idx){
+  var catEl=document.getElementById('histCat'+idx),subEl=document.getElementById('histSub'+idx);
+  if(!catEl||!subEl)return;
+  var subs=subcategoriesFor(catEl.value);
+  subEl.innerHTML=optionsHtml(subs,subs[0]||'Другое');
+}
+
+async function saveHistCat(idx){
+  var item=histState.rows[idx];
+  if(!item){toast('❌ Запись не найдена','er');return;}
+  var catEl=document.getElementById('histCat'+idx),subEl=document.getElementById('histSub'+idx),btn=document.getElementById('histSave'+idx);
+  if(!catEl||!subEl)return;
+  var row=item.row.slice();
+  while(row.length<10)row.push('');
+  row[1]=catEl.value;
+  row[2]=subEl.value||'Другое';
+  if(btn){btn.disabled=true;btn.textContent='…';}
+  var res=await post({action:'updateTransaction',sheetType:'transactions',rowNumber:item.rowNumber,row:row,values:{category:row[1],subcategory:row[2]}});
+  if(res&&res.success){
+    item.row=row;
+    if(statsState.txRows&&statsState.txRows[item.rowNumber-2])statsState.txRows[item.rowNumber-2]=row;
+    toast('✅ Категория обновлена','ok');
+    loadHist();
+    if(statsState.txRows!==null)loadStats();
+  }else{
+    toast('❌ '+((res&&res.error)||'Apps Script не обновил строку'),'er');
+    if(btn){btn.disabled=false;btn.textContent='✓';}
+  }
 }
 
 function toast(msg,type){
