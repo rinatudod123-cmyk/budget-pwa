@@ -744,10 +744,11 @@ async function loadHist(){
     html+='<div class="tx-item"><div class="tx-icon" style="background:'+bg+'">'+icon+'</div><div class="tx-info"><div class="tx-cat">'+cat+'</div><div class="tx-sub">'+(store||desc||'—')+'</div><div class="tx-dates">';
     if(txDate)html+='<span class="tx-tag tag-tx">💳 '+fmtD(txDate)+'</span>';
     if(addD&&addD!==txDate)html+='<span class="tx-tag tag-add">✏️ '+fmtD(addD)+'</span>';
-    html+='</div><div style="display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto auto;gap:6px;margin-top:8px;">';
+    html+='</div><div style="display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto auto auto;gap:6px;margin-top:8px;">';
     html+='<select id="histCat'+idx+'" onchange="updateHistSub('+idx+')" style="font-size:11px;padding:7px 6px;height:auto;min-width:0;">'+optionsHtml(cats,cat)+'</select>';
     html+='<button onclick="addHistCustomCat('+idx+')" type="button" title="Добавить свою категорию" style="padding:7px 9px;background:var(--s2);border:1px solid var(--br);border-radius:var(--rs);color:var(--ac);font-size:14px;cursor:pointer;">+</button>';
-    html+='<select id="histSub'+idx+'" style="font-size:11px;padding:7px 6px;height:auto;">'+optionsHtml(subs,sub||'Другое')+'</select>';
+    html+='<select id="histSub'+idx+'" style="font-size:11px;padding:7px 6px;height:auto;min-width:0;">'+optionsHtml(subs,sub||'Другое')+'</select>';
+    html+='<button onclick="addHistCustomSub('+idx+')" type="button" title="Добавить свою подкатегорию" style="padding:7px 9px;background:var(--s2);border:1px solid var(--br);border-radius:var(--rs);color:var(--ac);font-size:14px;cursor:pointer;">+</button>';
     html+='<button id="histSave'+idx+'" onclick="saveHistCat('+idx+')" type="button" title="Сохранить" style="padding:7px 10px;background:var(--s2);border:1px solid var(--br);border-radius:var(--rs);color:var(--ac);font-size:14px;cursor:pointer;">✓</button>';
     html+='<button id="histDel'+idx+'" onclick="deleteHistTx('+idx+')" type="button" title="Удалить транзакцию" style="padding:7px 10px;background:var(--s2);border:1px solid var(--br);border-radius:var(--rs);color:var(--red);font-size:14px;cursor:pointer;">×</button>';
     html+='</div></div><div class="tx-amt '+cls+'">'+sign+'€'+amt.toFixed(2)+'</div></div>';
@@ -786,6 +787,28 @@ function addHistCustomCat(idx){
   if(catEl)catEl.innerHTML=optionsHtml(allCategories(),name);
   if(subEl)subEl.innerHTML=optionsHtml(subcategoriesFor(name),'Другое');
   toast('✅ Категория добавлена: '+name,'ok');
+  syncReferenceData();
+}
+
+function addHistCustomSub(idx){
+  var catEl=document.getElementById('histCat'+idx),subEl=document.getElementById('histSub'+idx);
+  if(!catEl||!subEl)return;
+  var cat=catEl.value;
+  if(!cat||cat===ADD_NEW){toast('❌ Сначала выбери категорию','er');return;}
+  var name=prompt('Новая подкатегория для "'+cat+'":');
+  if(!name||!name.trim())return;
+  name=name.trim();
+  var stored={};
+  try{stored=JSON.parse(localStorage.getItem('cSubsMain')||'{}');}catch(e){}
+  if(!stored[cat])stored[cat]=[];
+  if(stored[cat].indexOf(name)<0){
+    stored[cat].push(name);
+    localStorage.setItem('cSubsMain',JSON.stringify(stored));
+  }
+  var subs=subcategoriesFor(cat);
+  if(subs.indexOf(name)<0)subs=[name].concat(subs);
+  subEl.innerHTML=optionsHtml(subs,name);
+  toast('✅ Подкатегория добавлена: '+name,'ok');
   syncReferenceData();
 }
 
