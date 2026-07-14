@@ -382,7 +382,7 @@ window.onload=function(){
   loadSett(); updateDots();
   renderMainCatOptions(); renderScanCatOptions();
   renderMainPayOptions(); renderScanPayOptions();
-  syncReferenceData();
+  loadReferenceData();
 };
 
 var DEFAULT_PAY=['Карта','Наличные','PayPal','Apple Pay','Перевод'];
@@ -587,6 +587,53 @@ function optionsHtmlAdd(values,selected){
 function subcategoriesFor(cat){
   var map=mergedSubcategories();
   return map[cat]&&map[cat].length?map[cat]:['Другое'];
+}
+
+function applyReferenceData(ref){
+  if(!ref)return;
+  if(ref.categories&&ref.categories.length){
+    var customCats=ref.categories.filter(function(cat){
+      return cat&&cat!=='Другое'&&DEFAULT_CATS.indexOf(cat)<0&&HIDDEN_CATS.indexOf(cat)<0;
+    });
+    saveCustomCats(customCats);
+  }
+  if(ref.subcategories){
+    var stored={};
+    Object.keys(ref.subcategories).forEach(function(cat){
+      var base=(SUBS[cat]||[]).concat(SCAN_SUBS[cat]||[]);
+      var extras=(ref.subcategories[cat]||[]).filter(function(sub){
+        return sub&&base.indexOf(sub)<0;
+      });
+      if(extras.length)stored[cat]=extras;
+    });
+    localStorage.setItem('cSubsMain',JSON.stringify(stored));
+  }
+  if(ref.paymentMethods&&ref.paymentMethods.length){
+    var customPay=ref.paymentMethods.filter(function(pay){
+      return pay&&DEFAULT_PAY.indexOf(pay)<0;
+    });
+    saveCustomPay(customPay);
+  }
+  renderMainCatOptions();
+  renderScanCatOptions();
+  renderMainPayOptions();
+  renderScanPayOptions();
+  updateSub();
+  updateScanSub();
+}
+
+async function loadReferenceData(){
+  var url=getUrl();
+  if(!url){syncReferenceData();return;}
+  try{
+    var r=await fetch(url+'?type=references');
+    var d=await r.json();
+    if(d&&d.success&&d.references&&d.references.categories&&d.references.categories.length){
+      applyReferenceData(d.references);
+      localStorage.setItem('lastRefLoad',new Date().toISOString());
+    }
+  }catch(e){}
+  syncReferenceData();
 }
 
 async function syncReferenceData(){
