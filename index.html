@@ -271,6 +271,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div class="ctitle">Транзакции этого месяца</div>
     <div id="histList"><div style="text-align:center;padding:28px;color:var(--tx2)">Нажми «Обновить»</div></div>
   </div>
+  <button class="btn btn-p" id="histSaveAll" onclick="saveAllHistChanges()" style="display:none;margin-top:12px;">💾 Записать все</button>
   <button class="btn btn-p" onclick="loadHist()">🔄 Обновить из таблицы</button>
 </div>
 
@@ -579,6 +580,10 @@ function optionsHtml(values,selected){
   return values.map(function(v){return '<option value="'+v+'"'+(v===selected?' selected':'')+'>'+v+'</option>';}).join('');
 }
 
+function optionsHtmlAdd(values,selected){
+  return optionsHtml(values,selected)+'<option value="'+ADD_NEW+'">'+ADD_NEW+'</option>';
+}
+
 function subcategoriesFor(cat){
   var map=mergedSubcategories();
   return map[cat]&&map[cat].length?map[cat]:['Другое'];
@@ -750,15 +755,12 @@ function renderHistList(){
     html+='<div class="tx-item"><div class="tx-icon" style="background:'+bg+'">'+icon+'</div><div class="tx-info"><div class="tx-cat">'+cat+'</div><div class="tx-sub">'+(store||desc||'—')+'</div><div class="tx-dates">';
     if(txDate)html+='<span class="tx-tag tag-tx">💳 '+fmtD(txDate)+'</span>';
     if(addD&&addD!==txDate)html+='<span class="tx-tag tag-add">✏️ '+fmtD(addD)+'</span>';
-    html+='</div><div style="display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto auto auto auto;gap:6px;margin-top:8px;">';
-    html+='<select id="histCat'+idx+'" onchange="updateHistSub('+idx+')" style="font-size:11px;padding:7px 6px;height:auto;min-width:0;">'+optionsHtml(cats,cat)+'</select>';
-    html+='<button onclick="addHistCustomCat('+idx+')" type="button" title="Добавить свою категорию" style="padding:7px 9px;background:var(--s2);border:1px solid var(--br);border-radius:var(--rs);color:var(--ac);font-size:14px;cursor:pointer;">+</button>';
-    html+='<select id="histSub'+idx+'" style="font-size:11px;padding:7px 6px;height:auto;min-width:0;">'+optionsHtml(subs,sub||'Другое')+'</select>';
-    html+='<button onclick="addHistCustomSub('+idx+')" type="button" title="Добавить свою подкатегорию" style="padding:7px 9px;background:var(--s2);border:1px solid var(--br);border-radius:var(--rs);color:var(--ac);font-size:14px;cursor:pointer;">+</button>';
+    html+='</div><div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto auto;gap:6px;margin-top:8px;">';
+    html+='<select id="histCat'+idx+'" onchange="updateHistSub('+idx+')" style="font-size:11px;padding:7px 6px;height:auto;min-width:0;">'+optionsHtmlAdd(cats,cat)+'</select>';
+    html+='<select id="histSub'+idx+'" onchange="updateHistSubChoice('+idx+')" style="font-size:11px;padding:7px 6px;height:auto;min-width:0;">'+optionsHtmlAdd(subs,sub||'Другое')+'</select>';
     html+='<button onclick="toggleHistSplit('+idx+')" type="button" title="Разделить транзакцию" style="padding:7px 9px;background:var(--s2);border:1px solid var(--br);border-radius:var(--rs);color:var(--tx2);font-size:14px;cursor:pointer;">✂</button>';
-    html+='<button id="histSave'+idx+'" onclick="saveHistCat('+idx+')" type="button" title="Сохранить" style="padding:7px 10px;background:var(--s2);border:1px solid var(--br);border-radius:var(--rs);color:var(--ac);font-size:14px;cursor:pointer;">✓</button>';
     html+='<button id="histDel'+idx+'" onclick="deleteHistTx('+idx+')" type="button" title="Удалить транзакцию" style="padding:7px 10px;background:var(--s2);border:1px solid var(--br);border-radius:var(--rs);color:var(--red);font-size:14px;cursor:pointer;">×</button>';
-    html+='</div><input id="histDesc'+idx+'" type="text" value="'+String(desc||'').replace(/"/g,'&quot;')+'" placeholder="Комментарий (попадёт в Описание)" style="font-size:12px;padding:8px 10px;height:auto;margin-top:6px;">';
+    html+='</div><input id="histDesc'+idx+'" type="text" value="'+String(desc||'').replace(/"/g,'&quot;')+'" oninput="markHistDirty('+idx+')" placeholder="Комментарий (попадёт в Описание)" style="font-size:12px;padding:8px 10px;height:auto;margin-top:6px;">';
     if(item.split&&item.parts&&item.parts.length){
       item.parts.forEach(function(part,pi){
         var pSubs=subcategoriesFor(part.cat);
@@ -766,8 +768,8 @@ function renderHistList(){
         html+='<div style="display:grid;grid-template-columns:72px minmax(0,1fr) minmax(0,1fr) auto;gap:5px;margin-top:6px;align-items:center;">';
         if(pi===0)html+='<input type="text" readonly value="'+part.amount.toFixed(2)+'" title="Остаток считается автоматически" style="font-size:11px;padding:7px 4px;height:auto;color:var(--tx2);background:rgba(255,255,255,.03);">';
         else html+='<input type="number" step="0.01" value="'+part.amount+'" onchange="updateHistSplitPart('+idx+','+pi+',\'amount\',this.value)" style="font-size:11px;padding:7px 4px;height:auto;">';
-        html+='<select onchange="updateHistSplitPart('+idx+','+pi+',\'cat\',this.value)" style="font-size:11px;padding:7px 4px;height:auto;min-width:0;">'+optionsHtml(cats,part.cat)+'</select>';
-        html+='<select onchange="updateHistSplitPart('+idx+','+pi+',\'sub\',this.value)" style="font-size:11px;padding:7px 4px;height:auto;min-width:0;">'+optionsHtml(pSubs,part.sub||'Другое')+'</select>';
+        html+='<select onchange="updateHistSplitPart('+idx+','+pi+',\'cat\',this.value)" style="font-size:11px;padding:7px 4px;height:auto;min-width:0;">'+optionsHtmlAdd(cats,part.cat)+'</select>';
+        html+='<select onchange="updateHistSplitPart('+idx+','+pi+',\'sub\',this.value)" style="font-size:11px;padding:7px 4px;height:auto;min-width:0;">'+optionsHtmlAdd(pSubs,part.sub||'Другое')+'</select>';
         html+=pi===0?'<div style="width:30px;"></div>':'<button onclick="removeHistSplitPart('+idx+','+pi+')" type="button" title="Убрать часть" style="padding:6px 9px;background:var(--s2);border:1px solid var(--br);border-radius:var(--rs);color:var(--red);font-size:14px;cursor:pointer;">×</button>';
         html+='</div>';
       });
@@ -783,6 +785,7 @@ function renderHistList(){
   var cur=localStorage.getItem('cur')||'€';
   document.getElementById('sumInc').textContent=cur+inc.toFixed(0);
   document.getElementById('sumExp').textContent=cur+exp.toFixed(0);
+  updateHistSaveAllState();
 }
 
 function updateHistSub(idx){
@@ -790,7 +793,36 @@ function updateHistSub(idx){
   if(!catEl||!subEl)return;
   if(catEl.value===ADD_NEW){addHistCustomCat(idx);return;}
   var subs=subcategoriesFor(catEl.value);
-  subEl.innerHTML=optionsHtml(subs,subs[0]||'Другое');
+  subEl.innerHTML=optionsHtmlAdd(subs,subs[0]||'Другое');
+  markHistDirty(idx);
+}
+
+function updateHistSubChoice(idx){
+  var subEl=document.getElementById('histSub'+idx);
+  if(!subEl)return;
+  if(subEl.value===ADD_NEW){addHistCustomSub(idx);return;}
+  markHistDirty(idx);
+}
+
+function markHistDirty(idx){
+  var item=histState.rows[idx];
+  if(item)item.dirty=true;
+  updateHistSaveAllState();
+}
+
+function updateHistSaveAllState(){
+  var btn=document.getElementById('histSaveAll');
+  if(!btn)return;
+  var count=(histState.rows||[]).filter(function(item){return item&&item.dirty;}).length;
+  if(count>0){
+    btn.style.display='block';
+    btn.disabled=false;
+    btn.textContent='💾 Записать все ('+count+')';
+  }else{
+    btn.style.display='none';
+    btn.disabled=false;
+    btn.textContent='💾 Записать все';
+  }
 }
 
 function addHistCustomCat(idx){
@@ -799,7 +831,7 @@ function addHistCustomCat(idx){
   if(!name||!name.trim()){
     if(catEl&&catEl.value===ADD_NEW){
       var old=histState.rows[idx]&&histState.rows[idx].row?histState.rows[idx].row[1]:'Другое';
-      catEl.innerHTML=optionsHtml(allCategories(),old);
+      catEl.innerHTML=optionsHtmlAdd(allCategories(),old);
       updateHistSub(idx);
     }
     return;
@@ -810,8 +842,9 @@ function addHistCustomCat(idx){
     arr.push(name);
     saveCustomCats(arr);
   }
-  if(catEl)catEl.innerHTML=optionsHtml(allCategories(),name);
-  if(subEl)subEl.innerHTML=optionsHtml(subcategoriesFor(name),'Другое');
+  if(catEl)catEl.innerHTML=optionsHtmlAdd(allCategories(),name);
+  if(subEl)subEl.innerHTML=optionsHtmlAdd(subcategoriesFor(name),'Другое');
+  markHistDirty(idx);
   toast('✅ Категория добавлена: '+name,'ok');
   syncReferenceData();
 }
@@ -833,9 +866,50 @@ function addHistCustomSub(idx){
   }
   var subs=subcategoriesFor(cat);
   if(subs.indexOf(name)<0)subs=[name].concat(subs);
-  subEl.innerHTML=optionsHtml(subs,name);
+  subEl.innerHTML=optionsHtmlAdd(subs,name);
+  markHistDirty(idx);
   toast('✅ Подкатегория добавлена: '+name,'ok');
   syncReferenceData();
+}
+
+function addHistSplitCustomCat(idx,pi){
+  var item=histState.rows[idx];
+  if(!item||!item.parts||!item.parts[pi])return;
+  var name=prompt('Название новой категории (можно с эмодзи):');
+  if(!name||!name.trim()){renderHistList();return;}
+  name=name.trim();
+  var arr=getCustomCats();
+  if(arr.indexOf(name)<0&&DEFAULT_CATS.indexOf(name)<0&&HIDDEN_CATS.indexOf(name)<0){
+    arr.push(name);
+    saveCustomCats(arr);
+  }
+  item.parts[pi].cat=name;
+  item.parts[pi].sub='Другое';
+  item.dirty=true;
+  toast('✅ Категория добавлена: '+name,'ok');
+  syncReferenceData();
+  renderHistList();
+}
+
+function addHistSplitCustomSub(idx,pi){
+  var item=histState.rows[idx];
+  if(!item||!item.parts||!item.parts[pi])return;
+  var cat=item.parts[pi].cat||'Другое';
+  var name=prompt('Новая подкатегория для "'+cat+'":');
+  if(!name||!name.trim()){renderHistList();return;}
+  name=name.trim();
+  var stored={};
+  try{stored=JSON.parse(localStorage.getItem('cSubsMain')||'{}');}catch(e){}
+  if(!stored[cat])stored[cat]=[];
+  if(stored[cat].indexOf(name)<0){
+    stored[cat].push(name);
+    localStorage.setItem('cSubsMain',JSON.stringify(stored));
+  }
+  item.parts[pi].sub=name;
+  item.dirty=true;
+  toast('✅ Подкатегория добавлена: '+name,'ok');
+  syncReferenceData();
+  renderHistList();
 }
 
 function recalcHistBasePart(idx){
@@ -858,6 +932,7 @@ function toggleHistSplit(idx){
     item.split=true;
     item.parts=[{amount:Math.abs(parseFloat(row[4])||0),cat:(catEl&&catEl.value)||row[1]||'Другое',sub:(subEl&&subEl.value)||row[2]||'Другое'}];
   }
+  item.dirty=true;
   renderHistList();
 }
 
@@ -865,6 +940,7 @@ function addHistSplitPart(idx){
   var item=histState.rows[idx];
   if(!item||!item.split)return;
   item.parts.push({amount:0,cat:'Другое',sub:'Другое'});
+  item.dirty=true;
   recalcHistBasePart(idx);
   renderHistList();
 }
@@ -873,6 +949,7 @@ function removeHistSplitPart(idx,pi){
   var item=histState.rows[idx];
   if(!item||!item.parts||pi===0)return;
   item.parts.splice(pi,1);
+  item.dirty=true;
   recalcHistBasePart(idx);
   renderHistList();
 }
@@ -883,35 +960,34 @@ function updateHistSplitPart(idx,pi,field,val){
   var part=item.parts[pi];
   if(field==='amount')part.amount=parseFloat(val)||0;
   else part[field]=val;
-  if(field==='cat')part.sub=(subcategoriesFor(val)[0]||'Другое');
+  if(field==='cat'){
+    if(val===ADD_NEW){addHistSplitCustomCat(idx,pi);return;}
+    part.sub=(subcategoriesFor(val)[0]||'Другое');
+  }
+  if(field==='sub'&&val===ADD_NEW){addHistSplitCustomSub(idx,pi);return;}
+  item.dirty=true;
   recalcHistBasePart(idx);
   renderHistList();
 }
 
-async function saveHistCat(idx){
+function collectHistChange(idx){
   var item=histState.rows[idx];
-  if(!item){toast('❌ Запись не найдена','er');return;}
-  var catEl=document.getElementById('histCat'+idx),subEl=document.getElementById('histSub'+idx),descEl=document.getElementById('histDesc'+idx),btn=document.getElementById('histSave'+idx);
-  if(!catEl||!subEl)return;
+  if(!item)return null;
+  var catEl=document.getElementById('histCat'+idx),subEl=document.getElementById('histSub'+idx),descEl=document.getElementById('histDesc'+idx);
+  if(!catEl||!subEl)return null;
   var row=item.row.slice();
   while(row.length<10)row.push('');
   row[1]=catEl.value;
   row[2]=subEl.value||'Другое';
   row[3]=descEl?descEl.value:'';
-  if(btn){btn.disabled=true;btn.textContent='…';}
-  var res;
   if(item.split&&item.parts&&item.parts.length){
     recalcHistBasePart(idx);
     if(item.parts[0].amount<0){
-      toast('❌ Сумма частей больше исходной транзакции','er');
-      if(btn){btn.disabled=false;btn.textContent='✓';}
-      return;
+      return {error:'Сумма частей больше исходной транзакции'};
     }
     var parts=item.parts.filter(function(p){return (parseFloat(p.amount)||0)>0;});
     if(!parts.length){
-      toast('❌ Нет частей для сохранения','er');
-      if(btn){btn.disabled=false;btn.textContent='✓';}
-      return;
+      return {error:'Нет частей для сохранения'};
     }
     var type=row[5]||'Расход', store=row[6]||'', pay=row[7]||'', added=row[9]||todayStr(), txDate=row[0]||todayStr(), baseDesc=row[3]||'';
     var splitRows=parts.map(function(part,i){
@@ -919,19 +995,46 @@ async function saveHistCat(idx){
       if(parts.length>1&&desc)desc+=' (часть '+(i+1)+'/'+parts.length+')';
       return [txDate,part.cat||'Другое',part.sub||'Другое',desc,parseFloat(part.amount)||0,type,store,pay,row[8]||'',added];
     });
-    res=await post({action:'splitTransaction',sheetType:'transactions',rowNumber:item.rowNumber,rows:splitRows});
-  }else{
-    res=await post({action:'updateTransaction',sheetType:'transactions',rowNumber:item.rowNumber,category:row[1],subcategory:row[2],description:row[3],updates:{2:row[1],3:row[2],4:row[3]}});
+    return {action:'splitTransaction',sheetType:'transactions',rowNumber:item.rowNumber,rows:splitRows};
   }
+  return {action:'updateTransaction',sheetType:'transactions',rowNumber:item.rowNumber,category:row[1],subcategory:row[2],description:row[3],updates:{2:row[1],3:row[2],4:row[3]}};
+}
+
+async function saveHistCat(idx){
+  var change=collectHistChange(idx);
+  if(!change){toast('❌ Запись не найдена','er');return;}
+  if(change.error){toast('❌ '+change.error,'er');return;}
+  var res=await post(change);
   if(res&&res.success){
-    item.row=row;
-    if(statsState.txRows&&statsState.txRows[item.rowNumber-2])statsState.txRows[item.rowNumber-2]=row;
-    toast(item.split?'✅ Транзакция разделена':'✅ Транзакция обновлена','ok');
+    toast(change.action==='splitTransaction'?'✅ Транзакция разделена':'✅ Транзакция обновлена','ok');
     loadHist();
     if(statsState.txRows!==null)loadStats();
   }else{
     toast('❌ '+((res&&res.error)||'Apps Script не обновил строку'),'er');
-    if(btn){btn.disabled=false;btn.textContent='✓';}
+  }
+}
+
+async function saveAllHistChanges(){
+  var btn=document.getElementById('histSaveAll');
+  var changes=[],errors=[];
+  (histState.rows||[]).forEach(function(item,idx){
+    if(!item||!item.dirty)return;
+    var change=collectHistChange(idx);
+    if(!change)return;
+    if(change.error)errors.push(change.error);
+    else changes.push(change);
+  });
+  if(errors.length){toast('❌ '+errors[0],'er');return;}
+  if(!changes.length){toast('Нет изменений','');return;}
+  if(btn){btn.disabled=true;btn.textContent='⏳ Записываю...';}
+  var res=await post({action:'batchHistoryChanges',changes:changes});
+  if(res&&res.success){
+    toast('✅ Записано изменений: '+changes.length,'ok');
+    loadHist();
+    if(statsState.txRows!==null)loadStats();
+  }else{
+    toast('❌ '+((res&&res.error)||'Apps Script не записал изменения'),'er');
+    if(btn){btn.disabled=false;btn.textContent='💾 Записать все ('+changes.length+')';}
   }
 }
 
