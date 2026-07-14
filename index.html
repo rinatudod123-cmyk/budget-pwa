@@ -382,6 +382,7 @@ window.onload=function(){
   loadSett(); updateDots();
   renderMainCatOptions(); renderScanCatOptions();
   renderMainPayOptions(); renderScanPayOptions();
+  syncReferenceData();
 };
 
 var DEFAULT_PAY=['Карта','Наличные','PayPal','Apple Pay','Перевод'];
@@ -415,16 +416,20 @@ function addCustomPay(context){
   else if(context==='scan'){renderScanPayOptions(name);}
   else if(context==='csv'){renderCsvList();}
   toast('✅ Способ оплаты добавлен: '+name,'ok');
+  syncReferenceData();
 }
 
 var ADD_NEW='➕ Добавить своё…';
-var DEFAULT_MAIN_CATS=['🛒 Продукты','🏠 Жильё','🚗 Транспорт','🏥 Здоровье','🎭 Развлечения','👗 Одежда','📱 Связь','📚 Образование','🍽 Рестораны','💼 Зарплата','📈 Инвестиции','🚬 Вредные привычки','🧴 Бытовая химия'];
-var DEFAULT_SCAN_CATS=['🛒 Продукты','🏠 Жильё','🚗 Транспорт','🏥 Здоровье','🎭 Развлечения','👗 Одежда','🍽 Рестораны','💊 Аптека','⛽ АЗС/Топливо','🏗 Стройматериалы','🚬 Вредные привычки','🧴 Бытовая химия'];
+var DEFAULT_CATS=['🛒 Продукты','🏠 Жильё','🚗 Транспорт','🏥 Здоровье','🎭 Развлечения','👗 Одежда','📱 Связь','📚 Образование','🍽 Рестораны','💼 Зарплата','📈 Инвестиции','🚬 Вредные привычки','🧴 Бытовая химия','💊 Аптека','⛽ АЗС/Топливо','🏗 Стройматериалы'];
 
 function getCustomCats(){try{return JSON.parse(localStorage.getItem('customCats')||'[]');}catch(e){return[];}}
 function saveCustomCats(arr){localStorage.setItem('customCats',JSON.stringify(arr));}
-function allMainCats(){var c=getCustomCats();return DEFAULT_MAIN_CATS.concat(c.filter(function(x){return DEFAULT_MAIN_CATS.indexOf(x)<0;})).concat(['Другое']);}
-function allScanCats(){var c=getCustomCats();return DEFAULT_SCAN_CATS.concat(c.filter(function(x){return DEFAULT_SCAN_CATS.indexOf(x)<0;})).concat(['Другое']);}
+function allCategories(){
+  var custom=getCustomCats();
+  return DEFAULT_CATS.concat(custom.filter(function(x){return DEFAULT_CATS.indexOf(x)<0;})).concat(['Другое']);
+}
+function allMainCats(){return allCategories();}
+function allScanCats(){return allCategories();}
 
 function renderMainCatOptions(keepVal){
   var sel=document.getElementById('category');
@@ -445,7 +450,7 @@ function addCustomCat(context){
   }
   name=name.trim();
   var arr=getCustomCats();
-  if(arr.indexOf(name)<0 && DEFAULT_MAIN_CATS.indexOf(name)<0 && DEFAULT_SCAN_CATS.indexOf(name)<0){
+  if(arr.indexOf(name)<0 && DEFAULT_CATS.indexOf(name)<0){
     arr.push(name);
     saveCustomCats(arr);
   }
@@ -453,6 +458,7 @@ function addCustomCat(context){
   else if(context==='scan'){renderScanCatOptions(name);updateScanSub();}
   else if(context==='csv'){renderCsvList();}
   toast('✅ Категория добавлена: '+name,'ok');
+  syncReferenceData();
 }
 
 function getUrl(){return localStorage.getItem('su')||'';}
@@ -505,6 +511,7 @@ function addCustomMainSub() {
   var sub = document.getElementById('subcategory');
   for (var i=0;i<sub.options.length;i++) { if(sub.options[i].value===name){sub.selectedIndex=i;break;} }
   toast('✅ Добавлено: ' + name, 'ok');
+  syncReferenceData();
 }
 
 function openSett(){loadSett();updateDots();document.getElementById('settOv').classList.add('open');}
@@ -545,6 +552,37 @@ async function post(payload){
   catch(e){return{success:false,error:e.message};}
 }
 
+function mergedSubcategories(){
+  var result={},mainCustom={},scanCustom={};
+  try{mainCustom=JSON.parse(localStorage.getItem('cSubsMain')||'{}');}catch(e){}
+  try{scanCustom=JSON.parse(localStorage.getItem('cSubs')||'{}');}catch(e){}
+  allCategories().forEach(function(cat){
+    var base1=SUBS[cat]||[];
+    var base2=SCAN_SUBS[cat]||[];
+    var extra1=mainCustom[cat]||[];
+    var extra2=scanCustom[cat]||[];
+    var all=base1.concat(base2,extra1,extra2);
+    result[cat]=all.filter(function(v,i,a){return v&&a.indexOf(v)===i;});
+    if(!result[cat].length)result[cat]=['Другое'];
+  });
+  return result;
+}
+
+async function syncReferenceData(){
+  var url=getUrl();
+  if(!url)return;
+  var payload={
+    action:'syncReferenceData',
+    categories:allCategories(),
+    subcategories:mergedSubcategories(),
+    paymentMethods:allPayMethods()
+  };
+  var res=await post(payload);
+  if(res&&res.success){
+    localStorage.setItem('lastRefSync',new Date().toISOString());
+  }
+}
+
 async function submitTx(){
   var amt=parseFloat(document.getElementById('amount').value);
   if(!amt||amt<=0){toast('❌ Введи сумму','er');return;}
@@ -553,12 +591,8 @@ async function submitTx(){
   var btn=document.getElementById('addBtn');
   btn.disabled=true;btn.textContent='⏳ Записываю...';
   var txDate=document.getElementById('txDate').value||todayStr();
-  var res;
-  if(state.type==='Доход'){
-    res=await post({sheetType:'income',row:[txDate,document.getElementById('store').value,cat,amt,'Ежемесячно',document.getElementById('desc').value]});
-  }else{
-    res=await post({sheetType:'transactions',row:[txDate,cat,document.getElementById('subcategory').value,document.getElementById('desc').value,amt,state.type,document.getElementById('store').value,document.getElementById('payMethod').value,'',todayStr()]});
-  }
+  var sub=state.type==='Доход'?'Поступление':document.getElementById('subcategory').value;
+  var res=await post({sheetType:'transactions',row:[txDate,cat,sub,document.getElementById('desc').value,amt,state.type,document.getElementById('store').value,document.getElementById('payMethod').value,'',todayStr()]});
   if(res.success){toast('✅ Записано!','ok');document.getElementById('amount').value='';document.getElementById('desc').value='';document.getElementById('store').value='';}
   else toast('❌ '+(res.error||'Проверь URL'),'er');
   btn.disabled=false;btn.textContent='Записать в таблицу →';
@@ -648,18 +682,14 @@ async function saveReceipt(){
   var txDate=document.getElementById('scanDate').value||todayStr();
   var total=result.total||result.items.reduce(function(s,i){return s+(i._t||0);},0);
   var rows=result.items.map(function(item){return[txDate,store,item.name||'',item.category||'Другое',item.qty||1,item.price||0,item._t||0];});
-  btn.textContent='⏳ Пишу '+rows.length+' товаров...';
-  var r1=await post({sheetType:'items',rows:rows});
   btn.textContent='⏳ Пишу транзакцию...';
   var scanCat = document.getElementById('scanCat') ? document.getElementById('scanCat').value : '🛒 Продукты';
   var scanPay = document.getElementById('scanPay') ? document.getElementById('scanPay').value : 'Карта';
   var scanSubCat = document.getElementById('scanSubCat') ? document.getElementById('scanSubCat').value : 'Супермаркет';
   var r2=await post({sheetType:'transactions',row:[txDate,scanCat,scanSubCat,'Чек: '+store+' ('+result.items.length+' тов.)',total,'Расход',store,scanPay,'',todayStr()]});
   btn.disabled=false;btn.textContent='Записать в таблицу →';
-  if(r1.success&&r2.success){toast('✅ '+rows.length+' товаров + транзакция €'+total.toFixed(2),'ok');state.receipt=null;setTimeout(resetScan,1500);}
-  else if(!r1.success&&!r2.success){showErr(true,'❌ Ошибка записи','Товары: '+(r1.error||'нет ответа')+'\nТранзакция: '+(r2.error||'нет ответа')+'\nОткрой ⚙️ → "Проверить подключение"');}
-  else if(!r1.success){toast('⚠️ Транзакция ок, товары: '+(r1.error||'ошибка'),'er');state.receipt=null;setTimeout(resetScan,2000);}
-  else{toast('⚠️ Товары ок, транзакция: '+(r2.error||'ошибка'),'er');state.receipt=null;setTimeout(resetScan,2000);}
+  if(r2.success){toast('✅ Транзакция €'+total.toFixed(2)+' записана','ok');state.receipt=null;setTimeout(resetScan,1500);}
+  else{showErr(true,'❌ Ошибка записи','Транзакция: '+(r2.error||'нет ответа')+'\nОткрой ⚙️ → "Проверить подключение"');}
 }
 
 function resetScan(){
@@ -748,6 +778,7 @@ function addCustomSub() {
   var sub = document.getElementById('scanSubCat');
   for (var i=0;i<sub.options.length;i++) { if(sub.options[i].value===name){sub.selectedIndex=i;break;} }
   toast('✅ Добавлено: '+name,'ok');
+  syncReferenceData();
 }
 
 // ===== БАНК: ЗАГРУЗКА CSV =====
@@ -844,21 +875,6 @@ async function fetchExistingSigs(){
           sigs[iso+'|'+amt.toFixed(2)]=true;
         }
       });
-    }
-    var r2=await fetch(url+'?type=income');
-    if(r2.ok){
-      var d2=await r2.json();
-      if(d2.values&&d2.values.length>1){
-        d2.values.slice(1).forEach(function(row){
-          var dt=String(row[0]||'');
-          var p=dt.indexOf('-')>=0?dt.split('-'):(dt.indexOf('.')>=0?dt.split('.').reverse():[]);
-          if(p.length===3){
-            var iso=p[0]+'-'+p[1]+'-'+p[2];
-            var amt=parseFloat(row[3])||0;
-            sigs[iso+'|'+amt.toFixed(2)]=true;
-          }
-        });
-      }
     }
   }catch(e){}
   return sigs;
@@ -1054,7 +1070,7 @@ async function submitCsvBatch(){
     if(row.isIncome){
       done++;btn.textContent='⏳ Записываю '+done+'/'+totalOps+'...';
       var noteText=(row.sub&&row.sub!=='Другое'?row.sub+' — ':'')+(row.note?row.note+' | ':'')+row.zweck.slice(0,90);
-      var res=await post({sheetType:'income',row:[row.date,row.store,row.cat==='Другое'?'Другое':row.cat,row.amount,'Разово',noteText]});
+      var res=await post({sheetType:'transactions',row:[row.date,row.cat==='Другое'?'Другое':row.cat,'Поступление',noteText,row.amount,'Доход',row.store,row.pay,'',todayStr()]});
       if(res&&res.success)ok++;else fail++;
     }else if(row.split&&row.parts&&row.parts.length){
       var parts=row.parts.filter(function(p){return(parseFloat(p.amount)||0)>0;});
@@ -1085,7 +1101,7 @@ function resetCsv(){
 }
 
 // ===== СТАТИСТИКА =====
-var statsState={year:new Date().getFullYear(),month:new Date().getMonth()+1,txRows:null,incRows:null};
+var statsState={year:new Date().getFullYear(),month:new Date().getMonth()+1,txRows:null};
 var MONTH_NAMES=['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
 
 function shiftStatsMonth(delta){
@@ -1110,10 +1126,6 @@ async function loadStats(){
     var r1=await fetch(url+'?type=transactions');var d1=await r1.json();
     statsState.txRows=(d1.values&&d1.values.length>1)?d1.values.slice(1):[];
   }catch(e){statsState.txRows=[];}
-  try{
-    var r2=await fetch(url+'?type=income');var d2=await r2.json();
-    statsState.incRows=(d2.values&&d2.values.length>1)?d2.values.slice(1):[];
-  }catch(e){statsState.incRows=[];}
   renderStats();
 }
 
@@ -1140,12 +1152,6 @@ function renderStats(){
     var cat=String(row[1]||'Другое'),amt=parseFloat(row[4])||0,type=String(row[5]||'Расход');
     if(type==='Доход'){inc+=amt;}
     else if(type==='Расход'){exp+=amt;byCat[cat]=(byCat[cat]||0)+amt;}
-  });
-  (statsState.incRows||[]).forEach(function(row){
-    var ym=ymOf(row[0]);
-    if(!ym||ym.y!==statsState.year||ym.m!==statsState.month)return;
-    var amt=parseFloat(row[3])||0;
-    inc+=amt;
   });
 
   var cur=localStorage.getItem('cur')||'€';
