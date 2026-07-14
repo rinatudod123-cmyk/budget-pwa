@@ -772,7 +772,7 @@ async function saveHistCat(idx){
   row[1]=catEl.value;
   row[2]=subEl.value||'Другое';
   if(btn){btn.disabled=true;btn.textContent='…';}
-  var res=await post({action:'updateTransaction',rowNumber:item.rowNumber,category:row[1],subcategory:row[2],updates:{2:row[1],3:row[2]}});
+  var res=await post({action:'updateTransaction',sheetType:'transactions',rowNumber:item.rowNumber,category:row[1],subcategory:row[2],updates:{2:row[1],3:row[2]}});
   if(res&&res.success){
     item.row=row;
     if(statsState.txRows&&statsState.txRows[item.rowNumber-2])statsState.txRows[item.rowNumber-2]=row;
