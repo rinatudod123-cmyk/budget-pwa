@@ -1,4 +1,4 @@
-var CACHE = 'budget-v4';
+var CACHE = 'budget-v5';
 var ASSETS = [
   '/budget-pwa/',
   '/budget-pwa/index.html',
