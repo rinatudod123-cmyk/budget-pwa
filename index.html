@@ -1160,14 +1160,16 @@ function renderStats(){
   balEl.textContent=(bal>=0?'+':'')+cur+bal.toFixed(0);
   balEl.style.color=bal>=0?'var(--ac)':'var(--red)';
 
-  var cats=Object.keys(byCat).sort(function(a,b){return byCat[b]-byCat[a];});
-  if(!cats.length){catList.innerHTML='<div style="text-align:center;padding:20px;color:var(--tx2)">Нет расходов за этот месяц</div>';return;}
+  var baseCats=allCategories();
+  var allCats=baseCats.concat(Object.keys(byCat).filter(function(c){return baseCats.indexOf(c)<0;}));
+  var cats=allCats.sort(function(a,b){return (byCat[b]||0)-(byCat[a]||0);});
   var html='';
   cats.forEach(function(c){
-    var amt=byCat[c],pct=exp>0?Math.round(amt/exp*100):0;
+    var amt=byCat[c]||0,pct=exp>0?Math.round(amt/exp*100):0;
     var icon=CAT_ICONS[c]||'💳';
+    var label=c.indexOf(icon)===0?c:(icon+' '+c);
     html+='<div style="margin-bottom:12px;">';
-    html+='<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:5px;"><span>'+icon+' '+c+'</span><span>'+cur+amt.toFixed(2)+' · '+pct+'%</span></div>';
+    html+='<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:5px;"><span>'+label+'</span><span>'+cur+amt.toFixed(2)+' · '+pct+'%</span></div>';
     html+='<div style="height:6px;background:var(--s2);border-radius:4px;overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:var(--ac);border-radius:4px;"></div></div>';
     html+='</div>';
   });
