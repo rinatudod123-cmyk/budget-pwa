@@ -1143,13 +1143,18 @@ function renderStats(){
   var catList=document.getElementById('statsCatList');
   if(statsState.txRows===null){catList.innerHTML='<div style="text-align:center;padding:20px;color:var(--tx2)">Нажми «Обновить из таблицы»</div>';return;}
 
-  var inc=0,exp=0,byCat={};
+  var inc=0,exp=0,byCat={},bySub={};
   (statsState.txRows||[]).forEach(function(row){
     var ym=ymOf(row[0]);
     if(!ym||ym.y!==statsState.year||ym.m!==statsState.month)return;
-    var cat=String(row[1]||'Другое'),amt=parseFloat(row[4])||0,type=String(row[5]||'Расход');
+    var cat=String(row[1]||'Другое'),sub=String(row[2]||'Другое')||'Другое',amt=parseFloat(row[4])||0,type=String(row[5]||'Расход');
     if(type==='Доход'){inc+=amt;}
-    else if(type==='Расход'){exp+=amt;byCat[cat]=(byCat[cat]||0)+amt;}
+    else if(type==='Расход'){
+      exp+=amt;
+      byCat[cat]=(byCat[cat]||0)+amt;
+      if(!bySub[cat])bySub[cat]={};
+      bySub[cat][sub]=(bySub[cat][sub]||0)+amt;
+    }
   });
 
   var cur=localStorage.getItem('cur')||'€';
@@ -1160,8 +1165,9 @@ function renderStats(){
   balEl.textContent=(bal>=0?'+':'')+cur+bal.toFixed(0);
   balEl.style.color=bal>=0?'var(--ac)':'var(--red)';
 
-  var baseCats=allCategories();
-  var allCats=baseCats.concat(Object.keys(byCat).filter(function(c){return baseCats.indexOf(c)<0;}));
+  function hideStatsCat(c){return c.indexOf('Аптека')>=0||c.indexOf('АЗС')>=0||c.indexOf('Топливо')>=0||c.indexOf('Стройматериалы')>=0;}
+  var baseCats=allCategories().filter(function(c){return !hideStatsCat(c);});
+  var allCats=baseCats.concat(Object.keys(byCat).filter(function(c){return baseCats.indexOf(c)<0&&!hideStatsCat(c);}));
   var cats=allCats.sort(function(a,b){return (byCat[b]||0)-(byCat[a]||0);});
   var html='';
   cats.forEach(function(c){
@@ -1171,6 +1177,15 @@ function renderStats(){
     html+='<div style="margin-bottom:12px;">';
     html+='<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:5px;"><span>'+label+'</span><span>'+cur+amt.toFixed(2)+' · '+pct+'%</span></div>';
     html+='<div style="height:6px;background:var(--s2);border-radius:4px;overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:var(--ac);border-radius:4px;"></div></div>';
+    var subRows=Object.keys(bySub[c]||{}).sort(function(a,b){return bySub[c][b]-bySub[c][a];});
+    if(subRows.length){
+      html+='<div style="margin:7px 0 0 12px;border-left:1px solid var(--br);padding-left:10px;">';
+      subRows.forEach(function(s){
+        var subAmt=bySub[c][s]||0,subPct=amt>0?Math.round(subAmt/amt*100):0;
+        html+='<div style="display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--tx2);line-height:1.8;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+s+'</span><span style="white-space:nowrap;">'+cur+subAmt.toFixed(2)+' · '+subPct+'%</span></div>';
+      });
+      html+='</div>';
+    }
     html+='</div>';
   });
   catList.innerHTML=html;
