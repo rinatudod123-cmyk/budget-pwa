@@ -419,13 +419,14 @@ function addCustomPay(context){
 }
 
 var ADD_NEW='➕ Добавить своё…';
-var DEFAULT_CATS=['🛒 Продукты','🏠 Жильё','🚗 Транспорт','🏥 Здоровье','🎭 Развлечения','👗 Одежда','📱 Связь','📚 Образование','🍽 Рестораны','💼 Зарплата','📈 Инвестиции','🚬 Вредные привычки','🧴 Бытовая химия','💊 Аптека','⛽ АЗС/Топливо','🏗 Стройматериалы'];
+var DEFAULT_CATS=['🛒 Продукты','🏠 Жильё','🚗 Транспорт','🏥 Здоровье','🎭 Развлечения','👗 Одежда','📱 Связь','📚 Образование','🍽 Рестораны','💼 Зарплата','📈 Инвестиции','🚬 Вредные привычки','🧴 Бытовая химия'];
+var HIDDEN_CATS=['💊 Аптека','⛽ АЗС/Топливо','🏗 Стройматериалы'];
 
 function getCustomCats(){try{return JSON.parse(localStorage.getItem('customCats')||'[]');}catch(e){return[];}}
 function saveCustomCats(arr){localStorage.setItem('customCats',JSON.stringify(arr));}
 function allCategories(){
   var custom=getCustomCats();
-  return DEFAULT_CATS.concat(custom.filter(function(x){return DEFAULT_CATS.indexOf(x)<0;})).concat(['Другое']);
+  return DEFAULT_CATS.concat(custom.filter(function(x){return DEFAULT_CATS.indexOf(x)<0&&HIDDEN_CATS.indexOf(x)<0;})).concat(['Другое']);
 }
 function allMainCats(){return allCategories();}
 function allScanCats(){return allCategories();}
@@ -743,10 +744,12 @@ async function loadHist(){
     html+='<div class="tx-item"><div class="tx-icon" style="background:'+bg+'">'+icon+'</div><div class="tx-info"><div class="tx-cat">'+cat+'</div><div class="tx-sub">'+(store||desc||'—')+'</div><div class="tx-dates">';
     if(txDate)html+='<span class="tx-tag tag-tx">💳 '+fmtD(txDate)+'</span>';
     if(addD&&addD!==txDate)html+='<span class="tx-tag tag-add">✏️ '+fmtD(addD)+'</span>';
-    html+='</div><div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;margin-top:8px;">';
-    html+='<select id="histCat'+idx+'" onchange="updateHistSub('+idx+')" style="font-size:11px;padding:7px 6px;height:auto;">'+optionsHtml(cats,cat)+'</select>';
+    html+='</div><div style="display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto auto;gap:6px;margin-top:8px;">';
+    html+='<select id="histCat'+idx+'" onchange="updateHistSub('+idx+')" style="font-size:11px;padding:7px 6px;height:auto;min-width:0;">'+optionsHtml(cats,cat)+'</select>';
+    html+='<button onclick="addHistCustomCat('+idx+')" type="button" title="Добавить свою категорию" style="padding:7px 9px;background:var(--s2);border:1px solid var(--br);border-radius:var(--rs);color:var(--ac);font-size:14px;cursor:pointer;">+</button>';
     html+='<select id="histSub'+idx+'" style="font-size:11px;padding:7px 6px;height:auto;">'+optionsHtml(subs,sub||'Другое')+'</select>';
     html+='<button id="histSave'+idx+'" onclick="saveHistCat('+idx+')" type="button" title="Сохранить" style="padding:7px 10px;background:var(--s2);border:1px solid var(--br);border-radius:var(--rs);color:var(--ac);font-size:14px;cursor:pointer;">✓</button>';
+    html+='<button id="histDel'+idx+'" onclick="deleteHistTx('+idx+')" type="button" title="Удалить транзакцию" style="padding:7px 10px;background:var(--s2);border:1px solid var(--br);border-radius:var(--rs);color:var(--red);font-size:14px;cursor:pointer;">×</button>';
     html+='</div></div><div class="tx-amt '+cls+'">'+sign+'€'+amt.toFixed(2)+'</div></div>';
   });
   list.innerHTML=html;
@@ -758,8 +761,32 @@ async function loadHist(){
 function updateHistSub(idx){
   var catEl=document.getElementById('histCat'+idx),subEl=document.getElementById('histSub'+idx);
   if(!catEl||!subEl)return;
+  if(catEl.value===ADD_NEW){addHistCustomCat(idx);return;}
   var subs=subcategoriesFor(catEl.value);
   subEl.innerHTML=optionsHtml(subs,subs[0]||'Другое');
+}
+
+function addHistCustomCat(idx){
+  var name=prompt('Название новой категории (можно с эмодзи):');
+  var catEl=document.getElementById('histCat'+idx),subEl=document.getElementById('histSub'+idx);
+  if(!name||!name.trim()){
+    if(catEl&&catEl.value===ADD_NEW){
+      var old=histState.rows[idx]&&histState.rows[idx].row?histState.rows[idx].row[1]:'Другое';
+      catEl.innerHTML=optionsHtml(allCategories(),old);
+      updateHistSub(idx);
+    }
+    return;
+  }
+  name=name.trim();
+  var arr=getCustomCats();
+  if(arr.indexOf(name)<0&&DEFAULT_CATS.indexOf(name)<0&&HIDDEN_CATS.indexOf(name)<0){
+    arr.push(name);
+    saveCustomCats(arr);
+  }
+  if(catEl)catEl.innerHTML=optionsHtml(allCategories(),name);
+  if(subEl)subEl.innerHTML=optionsHtml(subcategoriesFor(name),'Другое');
+  toast('✅ Категория добавлена: '+name,'ok');
+  syncReferenceData();
 }
 
 async function saveHistCat(idx){
@@ -782,6 +809,25 @@ async function saveHistCat(idx){
   }else{
     toast('❌ '+((res&&res.error)||'Apps Script не обновил строку'),'er');
     if(btn){btn.disabled=false;btn.textContent='✓';}
+  }
+}
+
+async function deleteHistTx(idx){
+  var item=histState.rows[idx];
+  if(!item){toast('❌ Запись не найдена','er');return;}
+  var row=item.row||[], label=(row[6]||row[3]||row[1]||'эту транзакцию')+' · €'+((parseFloat(row[4])||0).toFixed(2));
+  if(!confirm('Удалить транзакцию?\n'+label))return;
+  var btn=document.getElementById('histDel'+idx);
+  if(btn){btn.disabled=true;btn.textContent='…';}
+  var res=await post({action:'deleteTransaction',sheetType:'transactions',rowNumber:item.rowNumber});
+  if(res&&res.success){
+    toast('✅ Транзакция удалена','ok');
+    histState.rows=histState.rows.filter(function(x){return x!==item;});
+    loadHist();
+    if(statsState.txRows!==null)loadStats();
+  }else{
+    toast('❌ '+((res&&res.error)||'Apps Script не удалил строку'),'er');
+    if(btn){btn.disabled=false;btn.textContent='×';}
   }
 }
 
