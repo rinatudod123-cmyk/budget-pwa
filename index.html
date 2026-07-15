@@ -263,10 +263,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
 <!-- ИСТОРИЯ -->
 <div class="panel" id="panel-hist">
-  <div class="sum-row">
-    <div class="sum-card"><div class="sum-lbl">Доходы</div><div class="sum-val g" id="sumInc">€0</div></div>
-    <div class="sum-card"><div class="sum-lbl">Расходы</div><div class="sum-val r" id="sumExp">€0</div></div>
-  </div>
   <div class="card">
     <div class="ctitle">Транзакции этого месяца</div>
     <div id="histList"><div style="text-align:center;padding:28px;color:var(--tx2)">Нажми «Обновить»</div></div>
@@ -794,12 +790,11 @@ async function loadHist(){
 function renderHistList(){
   var list=document.getElementById('histList'),rows=histState.rows||[];
   if(!rows.length){list.innerHTML='<div style="text-align:center;padding:28px;color:var(--tx2)">Нет записей</div>';return;}
-  var inc=0,exp=0,now=new Date(),cm=now.getMonth()+1,cy=now.getFullYear(),html='';
+  var html='';
   rows.slice(0,60).forEach(function(item,idx){
     var row=item.row;
     var txDate=String(row[0]||''),cat=String(row[1]||'Другое'),sub=String(row[2]||''),desc=String(row[3]||''),amt=parseFloat(row[4])||0,type=String(row[5]||'Расход'),store=String(row[6]||''),addD=String(row[8]||'');
     var icon=CAT_ICONS[cat]||'💳',bg=CAT_BG[cat]||'rgba(255,255,255,.05)',sign=type==='Доход'?'+':'-',cls=type==='Доход'?'inc':'exp';
-    var p=txDate.split('-');if(p.length===3&&parseInt(p[0])===cy&&parseInt(p[1])===cm){if(type==='Доход')inc+=amt;else if(type==='Расход')exp+=amt;}
     var cats=allCategories(),subs=subcategoriesFor(cat);
     if(item.split&&item.parts&&item.parts.length){recalcHistBasePart(idx);}
     if(sub&&subs.indexOf(sub)<0)subs=[sub].concat(subs);
@@ -833,9 +828,6 @@ function renderHistList(){
     html+='</div><div class="tx-amt '+cls+'">'+sign+'€'+amt.toFixed(2)+'</div></div>';
   });
   list.innerHTML=html;
-  var cur=localStorage.getItem('cur')||'€';
-  document.getElementById('sumInc').textContent=cur+inc.toFixed(0);
-  document.getElementById('sumExp').textContent=cur+exp.toFixed(0);
   updateHistSaveAllState();
 }
 
